@@ -1,0 +1,50 @@
+{% extends 'global/Page.html' %}
+
+{% block %}
+    <style>
+        .progress-bar {
+            width: 100%;
+        }
+    </style>
+{% endblock %}
+
+
+{% block title %}
+    <div class="d-flex justify-content-center">
+        <h2 style="margin-bottom:20px">Processing please wait ...</h2>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="explanation-container">
+        This could take 3 minutes long.<br>
+        Don't refresh the page.
+    </div>
+    <div class="progress">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"style="-webkit-animation: 1s linear infinite progress-bar-stripes !important;animation: 1s linear infinite progress-bar-stripes !important;"></div>
+    </div>
+    <form id="theForm" method="post"></form>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const form = document.getElementById("theForm");
+    let pollTimer = null;
+    pollStatus();
+});
+function pollStatus() {
+    liveSend({type: "status"});
+}
+// Start polling alle 10 Sekunden
+// pollTimer = setInterval(pollStatus, 1000);
+function liveRecv(data) {
+    const status = data.status || data;
+    console.log("status:", status);
+    if (status === "done") {
+        form.submit();
+    }
+};
+</script>
+{% endblock %}

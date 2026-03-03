@@ -1,0 +1,57 @@
+{% extends 'global/Page.html' %}
+
+{% block title %}
+    Questionnaire for User Profiling
+{% endblock %}
+
+{% block content %}
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <p>Dear participant, <br />
+    thank you for participating in our experiment and in this survey conducted by the Karlsruhe Institute of Technology (KIT), Germany.</p>
+ 
+    <p>This is the second part of a two-part study.
+        <ul>
+            <li>Part 1 (14th of January): survey with 55 questions about demographics, personality, and wellbeing (~ 10 minutes)</li>
+            <li>Part 2 (TODAY): survey with 31 questions + chatbot interaction (~ 30 minutes)</li>
+            <li>Total time commitment: ~ 45 minutes across both parts</li>
+    </ul></p>
+<p>The overall goal of this study is to evaluate a process for creating user profiles for chatbot interactions. Your participation will help us develop more personalized and effective AI interactions that better meet users' needs.</p>
+
+<p>
+WHAT HAPPENS IN THIS PART OF THE STUDY?<br />
+This second part of the study has the following structure:
+    <ul>
+        <li>Section 1: You will be asked several questions regarding your personality and mental health.</li>
+        <li>Section 2: You will interact with a chatbot and answer open questions regarding your personality and mental health.</li>
+        <li>Section 3: You will evaluate different dimensions of your created profile.</li>
+        <li>Section 4: You will refine your profile.</li>
+    </ul>
+In total, this study part takes around 30 minutes.
+Please provide thoughtful and honest responses to all questions.
+</p>    
+    
+        {{ formfields }}
+    </div>
+    
+    <div style="text-align: right; margin-top: 20px;">
+        {{ next_button }}
+    </div>
+{% endblock %}
+
+{{ block styles }}
+<style>
+    .col-form-label {
+        font-weight:bold !important;
+    }
+</style>
+{{ endblock }}
+
+{{ block scripts }}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const timestamp = Date.now() / 1000;
+        console.log(timestamp)
+        liveSend({'timestamp_prolific': timestamp})
+    });
+</script>
+{{ endblock }}

@@ -1,0 +1,165 @@
+{% extends 'Chat/Page.html' %}
+
+{% block title %}
+    <div class="d-flex justify-content-center">
+        <h2 style="margin-bottom:20px">Chat Interaction</h2>
+    </div>
+{% endblock %}
+
+{{ block scripts }}
+<script>
+    // run this when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Prevent form submission when pressing enter or clicking buttons
+        const form = document.querySelector('form');
+        const typingId = 'typing'
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+        });
+        
+        // delay chat input focus
+        setTimeout(() => {
+            const chatInput = document.getElementById('chatinput');
+            chatInput.focus();
+        }, 100);
+        
+    });
+
+    // run sendMsg when enter key is pressed
+    var chatInput = document.getElementById('chatinput');    
+    chatInput.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            sendMsg();
+        }
+    });
+
+    // function to send user message to server
+    function sendMsg() {
+        const text = chatInput.value.trim();
+        if (text) {
+            liveSend({'event': 'text', 'text': text});
+            chatInput.value = '';
+            typingId = 'typing-' + Date.now();
+            let typingHtml = `
+                <div class="message botMsg typing" id="${typingId}">
+                    <div class="typing-indicator">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                </div>
+            `;
+            setTimeout(() => {
+                chatMessages.insertAdjacentHTML('beforeend', typingHtml);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 100);
+        }
+    }
+
+    // function for live receiving from server
+    function liveRecv(data) {
+        const status = data.status || data;
+        if (status === "done") {
+            form.submit();
+        }
+        let event = data["event"];
+        // Handle text messages send by humans
+        if (event == 'text') {
+            const messageId = data.msgId;
+            const selfText = data.selfText;
+            const sender = data.sender;            
+            // get chat elements
+            const chatInput = document.getElementById('chatinput');
+            const chatMessages = document.getElementById('chatMessages');
+            // create message html from subject input and insert into chatMessages
+            let messageHtml = `
+                <div class="message selfMsg" id="${messageId}" data-author="${sender}">
+                    <strong>You<br></strong> ${selfText}
+                </div>
+            `;
+            chatMessages.insertAdjacentHTML('beforeend', messageHtml);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // trigger bot message
+            liveSend({'event': 'botMsg'});
+        // handle bot messages
+        } else if (event == 'botText') {
+            // grab data from server
+            const botMsgId = data.botMsgId;
+            const text = data.text;
+            const sender = data.sender;
+            // get chat elements
+            const chatInput = document.getElementById('chatinput');
+            const chatMessages = document.getElementById('chatMessages');
+            // Add typing indicator for bot and insert into chatMessages
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Add bot response after a 2 seconds delay
+            setTimeout(() => {
+                // remove typing indicator
+                const typingIndicator = document.getElementById(typingId);
+                if (typingIndicator) {
+                    typingIndicator.remove();
+                }
+                // replace with bot response
+                let botHtml = `
+                    <div class="message botMsg" id="${botMsgId}" data-author="${sender}">
+                        <strong>${sender}<br></strong> ${text}
+                    </div>
+                `;
+                chatMessages.insertAdjacentHTML('beforeend', botHtml);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }, 1000);
+        }
+    }
+</script>
+{{ endblock }}
+
+
+{{ block content }}
+<div class='container card mb-4'>
+    <div class='row no-gutters' style="width: 100%;">
+        <div class='infoBox col-4 d-flex col-md-4 align-items-center justify-content-center' style='font-size:22px; height: 100%; min-height: 300px;'>
+            <p>
+                <b>Task:</b>
+                <br>
+                    Please answer the chatbot's questions as accurately as possible so that a suitable profile can be created for you.<br>
+                    Please answer the questions in <b>English</b>.
+                <br><br>
+                The Chatbot will ask you <b>eight questions.</b>
+            </p>
+        </div>
+
+        <!-- right side of interface, with chat box and text input -->
+        <div class='chatPanel col-8 col-md-8' id='chatPanel'>
+            <div class='chatHeader'>
+                Chat Bot
+            </div>
+            <div id='chatMessages' class='chatMessages'>
+                {% if cached_messages %}
+                    {% for msg in cached_messages %}
+                        {% if msg.role == 'assistant' %}                    
+                            <div class="message botMsg" >
+                                <strong>Bot<br></strong> {{ msg.content }}
+                            </div>    
+                        {% endif %}
+                        {% if msg.role == 'user' %}                    
+                            <div class="message selfMsg" >
+                                <strong>You<br></strong> {{ msg.content }}
+                            </div>    
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+            
+            </div>
+        
+            <div class='inputBox'>
+                <div class='typeInputBox'>
+                    <input type='text' id='chatinput' style='text-align:left;'>
+                    <button type='button' onclick='sendMsg()'>Send</button>
+                </div>
+            </div> 
+        </div>
+    </div>
+</div>
+<form id="form" method="post"></form>
+
+{{ endblock }}
