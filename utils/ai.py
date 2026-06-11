@@ -1,3 +1,4 @@
+import load_env  # noqa: F401
 import json
 import logging
 import os

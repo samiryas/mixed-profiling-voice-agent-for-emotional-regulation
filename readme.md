@@ -75,7 +75,14 @@ interaction.
 
 ### 2. Set environment variables
 
-Example (Linux/macOS):
+Copy the example file and fill in your values:
+
+    cp .env.example .env
+
+Variables in `.env` are loaded automatically when the app starts. Shell
+environment variables take precedence if both are set.
+
+Alternatively, export them in your shell (Linux/macOS):
 
     export OPENAI_KEY=...
     export DATABASE_URL=...

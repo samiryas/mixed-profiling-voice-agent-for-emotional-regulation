@@ -71,6 +71,8 @@ pydantic-core==2.27.2
     # via pydantic
 python-dateutil==2.9.0.post0
     # via botocore
+python-dotenv==1.2.2
+    # via -r requirements.in
 python-multipart==0.0.5
     # via otree
 requests==2.32.5

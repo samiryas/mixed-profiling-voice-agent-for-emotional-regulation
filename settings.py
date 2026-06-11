@@ -1,3 +1,4 @@
+import load_env  # noqa: F401
 from os import environ
 
 SESSION_CONFIGS = [
