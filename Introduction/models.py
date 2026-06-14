@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 
 doc = """
-    Big Five 10-item inventory and Dash
+    Big Five 10-item inventory and ERQ-10
 """
 
 BIG5_FIELDS = [
@@ -21,36 +21,25 @@ BIG5_FIELDS = [
     ('b5_9', "I see myself as someone who has an active imagination"),
 ]
 
-DASS_FIELDS = [
-	( 'dass_0', "I found it hard to wind down"),
-	( 'dass_1', "I was aware of dryness of my mouth"),
-	( 'dass_2', "I couldn’t seem to experience any positive feeling at all"),
-	( 'dass_3', "I experienced breathing difficulty (e.g., excessively rapid breathing, breathlessness in the absence of physical exertion)"),
-	( 'dass_4', "I found it difficult to work up the initiaive to do things"),
-	( 'dass_5', "I tended to over-react to situations"),
-	( 'dass_6', "I experienced trembling (e.g., in the hands)"),
-	( 'dass_7', "I felt that I was using a lot of nervous energy"),
-	( 'dass_8', "I was worried about situations in which I might panic and make a fool of myself"),
-	( 'dass_9', "I felt that I had nothing to look forward to"),
-	('dass_10', "I found myself getting agitated"),
-	('dass_11', "I found it difficult to relax"),
-	('dass_12', "I felt down-hearted and blue"),
-	('dass_13', "I was intolerant of anything that kept me from getting on with what I was doing"),
-	('dass_14', "I felt I was close to panic"),
-	('dass_15', "I was unable to become enthusiastic about anything"),
-	('dass_16', "I felt I wasn’t worth much as a person"),
-	('dass_17', "I felt that I was rather touchy"),
-	('dass_18', "I was aware of the action of my heart in the absence of physical exertion (e.g., sense of heart rate increase, heart missing a beat)"),
-	('dass_19', "I felt scared without any good reason"),
-	('dass_20', "I felt that life was meaningless"),
+ERQ_FIELDS = [
+    ('erq_0', "When I want to feel more positive emotion (such as joy or amusement), I change what I'm thinking about."),
+    ('erq_1', "I keep my emotions to myself."),
+    ('erq_2', "When I want to feel less negative emotion (such as sadness or anger), I change what I'm thinking about."),
+    ('erq_3', "When I am feeling positive emotions, I am careful not to express them."),
+    ('erq_4', "When I'm faced with a stressful situation, I make myself think about it in a way that helps me stay calm."),
+    ('erq_5', "I control my emotions by not expressing them."),
+    ('erq_6', "When I want to feel more positive emotion, I change the way I'm thinking about the situation."),
+    ('erq_7', "I control my emotions by changing the way I think about the situation I'm in."),
+    ('erq_8', "When I am feeling negative emotions, I make sure not to express them."),
+    ('erq_9', "When I want to feel less negative emotion, I change the way I'm thinking about the situation."),
 ]
 
 class Constants(BaseConstants):
     name_in_url = 'Introduction'
     players_per_group = None
     num_rounds = 1
-    big5_labels = dict(BIG5_FIELDS) 
-    dass_labels = dict(DASS_FIELDS) 
+    big5_labels = dict(BIG5_FIELDS)
+    erq_labels = dict(ERQ_FIELDS)
 
 class Subsession(BaseSubsession):
     pass
@@ -60,7 +49,7 @@ def creating_session(subsession):
     import random
     treatments = [1, 2]
     random.shuffle(treatments)
-    treatment_pool = itertools.cycle(treatments)    
+    treatment_pool = itertools.cycle(treatments)
     for player in subsession.get_players():
         player.treatment_questionnaire = next(treatment_pool)
 
@@ -68,7 +57,15 @@ class Group(BaseGroup):
     pass
 
 BIG5_CHOICES = [[1,"Disagree strongly"], [2,"Disagree a little"], [3,"Neither agree nor Disagree"], [4,"Agree a little"], [5,"Agree strongly"]]
-DASS_CHOICES = [[0,"Never"], [1,"Sometimes"], [2,"Often"], [3,"Almost Always"]]
+ERQ_CHOICES = [
+    [1, "Strongly disagree"],
+    [2, "Disagree"],
+    [3, "Slightly disagree"],
+    [4, "Neutral"],
+    [5, "Slightly agree"],
+    [6, "Agree"],
+    [7, "Strongly agree"],
+]
 
 
 class Profile(BaseModel):
@@ -77,13 +74,12 @@ class Profile(BaseModel):
     conscientiousness: str
     neuroticism: str
     openness: str
-    depression: str
-    anxiety: str
-    stress: str
+    reappraisal: str
+    suppression: str
 
 class Player(BasePlayer):
     timestamp_bigfive  = models.FloatField(initial=0)
-    timestamp_dass  = models.FloatField(initial=0)
+    timestamp_erq  = models.FloatField(initial=0)
     timestamp_prolific  = models.FloatField(initial=0)
     timestamp_privacy = models.FloatField(initial=0)
     prolific_id = models.StringField(label='Please enter your Prolific ID')
@@ -105,27 +101,16 @@ class Player(BasePlayer):
     b5_8 = models.IntegerField(choices=BIG5_CHOICES,label=Constants.big5_labels['b5_8'],widget=widgets.RadioSelect)
     b5_9 = models.IntegerField(choices=BIG5_CHOICES,label=Constants.big5_labels['b5_9'],widget=widgets.RadioSelect)
 
-    dass_0  = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_0'], widget=widgets.RadioSelect)
-    dass_1  = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_1'], widget=widgets.RadioSelect)
-    dass_2  = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_2'], widget=widgets.RadioSelect)
-    dass_3  = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_3'], widget=widgets.RadioSelect)
-    dass_4  = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_4'], widget=widgets.RadioSelect)
-    dass_5  = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_5'], widget=widgets.RadioSelect)
-    dass_6  = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_6'], widget=widgets.RadioSelect)
-    dass_7  = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_7'], widget=widgets.RadioSelect)
-    dass_8  = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_8'], widget=widgets.RadioSelect)
-    dass_9  = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_9'], widget=widgets.RadioSelect)
-    dass_10 = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_10'], widget=widgets.RadioSelect)
-    dass_11 = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_11'], widget=widgets.RadioSelect)
-    dass_12 = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_12'], widget=widgets.RadioSelect)
-    dass_13 = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_13'], widget=widgets.RadioSelect)
-    dass_14 = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_14'], widget=widgets.RadioSelect)
-    dass_15 = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_15'], widget=widgets.RadioSelect)
-    dass_16 = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_16'], widget=widgets.RadioSelect)
-    dass_17 = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_17'], widget=widgets.RadioSelect)
-    dass_18 = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_18'], widget=widgets.RadioSelect)
-    dass_19 = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_19'], widget=widgets.RadioSelect)
-    dass_20 = models.IntegerField(choices=DASS_CHOICES, label=Constants.dass_labels['dass_20'], widget=widgets.RadioSelect)
+    erq_0 = models.IntegerField(choices=ERQ_CHOICES, label=Constants.erq_labels['erq_0'], widget=widgets.RadioSelect)
+    erq_1 = models.IntegerField(choices=ERQ_CHOICES, label=Constants.erq_labels['erq_1'], widget=widgets.RadioSelect)
+    erq_2 = models.IntegerField(choices=ERQ_CHOICES, label=Constants.erq_labels['erq_2'], widget=widgets.RadioSelect)
+    erq_3 = models.IntegerField(choices=ERQ_CHOICES, label=Constants.erq_labels['erq_3'], widget=widgets.RadioSelect)
+    erq_4 = models.IntegerField(choices=ERQ_CHOICES, label=Constants.erq_labels['erq_4'], widget=widgets.RadioSelect)
+    erq_5 = models.IntegerField(choices=ERQ_CHOICES, label=Constants.erq_labels['erq_5'], widget=widgets.RadioSelect)
+    erq_6 = models.IntegerField(choices=ERQ_CHOICES, label=Constants.erq_labels['erq_6'], widget=widgets.RadioSelect)
+    erq_7 = models.IntegerField(choices=ERQ_CHOICES, label=Constants.erq_labels['erq_7'], widget=widgets.RadioSelect)
+    erq_8 = models.IntegerField(choices=ERQ_CHOICES, label=Constants.erq_labels['erq_8'], widget=widgets.RadioSelect)
+    erq_9 = models.IntegerField(choices=ERQ_CHOICES, label=Constants.erq_labels['erq_9'], widget=widgets.RadioSelect)
 
     profilingMessages_questionnaire = models.LongStringField(initial='[]')
     cachedMessages_questionnaire = models.LongStringField(initial='[]')

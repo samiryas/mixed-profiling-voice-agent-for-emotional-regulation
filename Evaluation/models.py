@@ -9,7 +9,7 @@ doc = """
 
 TRAITS = [
     'Extraversion','Agreeableness','Conscientiousness','Neuroticism','Openness',
-    'Depression','Anxiety','Stress'
+    'Reappraisal','Suppression'
 ]
 
 ATTRIBUTES = ["useful", "plausible", "trustworthy", "accurate"]
@@ -69,20 +69,15 @@ class Player(BasePlayer):
     interview_openness_trustworthy = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
     interview_openness_accurate    = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
 
-    interview_depression_useful      = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    interview_depression_plausible   = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    interview_depression_trustworthy = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    interview_depression_accurate    = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    interview_reappraisal_useful      = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    interview_reappraisal_plausible   = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    interview_reappraisal_trustworthy = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    interview_reappraisal_accurate    = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
 
-    interview_anxiety_useful      = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    interview_anxiety_plausible   = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    interview_anxiety_trustworthy = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    interview_anxiety_accurate    = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-
-    interview_stress_useful      = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    interview_stress_plausible   = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    interview_stress_trustworthy = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    interview_stress_accurate    = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    interview_suppression_useful      = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    interview_suppression_plausible   = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    interview_suppression_trustworthy = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    interview_suppression_accurate    = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
 
     questionnaire_extraversion_useful      = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
     questionnaire_extraversion_plausible   = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
@@ -109,29 +104,23 @@ class Player(BasePlayer):
     questionnaire_openness_trustworthy = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
     questionnaire_openness_accurate    = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
 
-    questionnaire_depression_useful      = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    questionnaire_depression_plausible   = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    questionnaire_depression_trustworthy = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    questionnaire_depression_accurate    = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    questionnaire_reappraisal_useful      = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    questionnaire_reappraisal_plausible   = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    questionnaire_reappraisal_trustworthy = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    questionnaire_reappraisal_accurate    = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
 
-    questionnaire_anxiety_useful      = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    questionnaire_anxiety_plausible   = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    questionnaire_anxiety_trustworthy = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    questionnaire_anxiety_accurate    = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-
-    questionnaire_stress_useful      = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    questionnaire_stress_plausible   = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    questionnaire_stress_trustworthy = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
-    questionnaire_stress_accurate    = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    questionnaire_suppression_useful      = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    questionnaire_suppression_plausible   = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    questionnaire_suppression_trustworthy = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
+    questionnaire_suppression_accurate    = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
 
     refinement_extraversion = models.LongStringField(label="Extraversion")
     refinement_agreeableness = models.LongStringField(label="Agreeableness")
     refinement_conscientiousness = models.LongStringField(label="Conscientiousness")
     refinement_neuroticism = models.LongStringField(label="Neuroticism")
     refinement_openness = models.LongStringField(label="Openness")
-    refinement_depression = models.LongStringField(label="Depression")
-    refinement_anxiety = models.LongStringField(label="Anxiety")
-    refinement_stress = models.LongStringField(label="Stress")
+    refinement_reappraisal = models.LongStringField(label="Reappraisal")
+    refinement_suppression = models.LongStringField(label="Suppression")
     treatment_evaluation  = models.IntegerField(choices=[1,2])
 
 
