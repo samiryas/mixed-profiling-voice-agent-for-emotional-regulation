@@ -32,8 +32,14 @@ class Introduction(Page):
 
 class BigFive(Page):
     form_model = 'player'
-    form_fields = [name for name, _ in BIG5_FIELDS]
-    random.shuffle(form_fields)
+
+    def get_form_fields(self):
+        order = self.participant.vars.get('big5_order')
+        if not order:
+            order = [name for name, _ in BIG5_FIELDS]
+            random.shuffle(order)
+            self.participant.vars['big5_order'] = order
+        return order
       
     @staticmethod
     def live_method(player, data):
@@ -56,8 +62,14 @@ class BigFiveT2(BigFive):
     
 class ERQ(Page):
     form_model = 'player'
-    form_fields = [name for name, _ in ERQ_FIELDS]
-    random.shuffle(form_fields)
+
+    def get_form_fields(self):
+        order = self.participant.vars.get('erq_order')
+        if not order:
+            order = [name for name, _ in ERQ_FIELDS]
+            random.shuffle(order)
+            self.participant.vars['erq_order'] = order
+        return order
 
     @staticmethod
     def live_method(player, data):
