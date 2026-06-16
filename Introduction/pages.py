@@ -129,8 +129,6 @@ class Processing(Page):
             messages.append({'role':'user','content': renderPrompt('Introduction/templates/Prompts/Modelling.txt', data)})
             profile = await runGPTModel(messages, Profile)
             logging.info("Profile modeled")
-            player.profilingMessages_questionnaire = json.dumps(messages)
-            player.profile_questionnaire = profile.model_dump_json()
             data["profile_questionnaire"] = profile
             cachedMessages = [
                 {'role': 'system', 'content': renderPrompt('Chat/templates/Prompts/System.txt', data)},
@@ -142,7 +140,10 @@ class Processing(Page):
             question_1 = await runGPT(messages_interview)
             logging.info("Generated Question")
             cachedMessages.append({'role':'assistant', 'content': question_1})
+            # All awaits are finished here, safe to write profiling info into player data.
+            player.profilingMessages_questionnaire = json.dumps(messages)
             player.cachedMessages_questionnaire = json.dumps(cachedMessages)
+            player.profile_questionnaire = profile.model_dump_json()
             yield {player.id_in_group: 'done' }
             return
 
