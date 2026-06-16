@@ -13,21 +13,21 @@ from datetime import datetime, timezone
 
 class Chat(Page):
     form_model = 'player'
-    
+
+    @staticmethod
+    def _ensure_cached_messages(player: Player):
+        if player.cachedMessages and player.cachedMessages != '[]':
+            return
+        cached = player.participant.vars.get('cached_messages')
+        if cached and cached != '[]':
+            player.cachedMessages = cached
+
     def before_next_page(self):
         self.participant.vars['cached_messages'] = self.player.cachedMessages
 
     def vars_for_template(self):
-        cached = self.player.cachedMessages
-        cached_questionnaire = self.participant.vars.get('cached_messages')
-        if cached and cached != '[]':
-            cached_messages = json.loads(cached)
-        elif cached_questionnaire and cached_questionnaire != '[]':
-            self.player.cachedMessages = cached_questionnaire
-            cached_messages = json.loads(cached_questionnaire)
-        else:
-            cached_messages = []
-        print(cached_messages)
+        self._ensure_cached_messages(self.player)
+        cached_messages = json.loads(self.player.cachedMessages or '[]')
         return {
             'cached_messages': cached_messages
         }
@@ -35,14 +35,15 @@ class Chat(Page):
     # live method functions (async)
     @staticmethod
     async def live_method(player: Player, data):
+        Chat._ensure_cached_messages(player)
         # if no new data, just return cached messages
         if not data:
             yield {player.id_in_group: dict(
-                messages=json.loads(player.cachedMessages),
+                messages=json.loads(player.cachedMessages or '[]'),
             )}
             return
         # if we have new data, process it and update cache
-        messages = json.loads(player.cachedMessages)
+        messages = json.loads(player.cachedMessages or '[]')
         # create current player identifier
         currentPlayer = 'P' + str(player.id_in_group)
         # handle different event types
@@ -123,17 +124,21 @@ class Chat(Page):
 class Processing(Page):
     form_model = 'player'
 
+    def vars_for_template(self):
+        return {'processing_complete': bool(self.player.profile_interview)}
+
     def before_next_page(self):
         self.participant.vars['profile_interview'] = self.player.profile_interview
 
     @staticmethod
     async def live_method(player: Player, data):
-        msg_type = data.get("type")        
+        msg_type = data.get("type")
         if msg_type == "status" and player.profile_interview == '':
             yield {player.id_in_group: 'running' }
             logging.info("Starting Profiling")
-            profile_questionnaire = json.loads(player.participant.vars.get('profile_questionnaire'))
-            messages = json.loads(player.cachedMessages)
+            profile_questionnaire = json.loads(player.participant.vars.get('profile_questionnaire', '{}'))
+            Chat._ensure_cached_messages(player)
+            messages = json.loads(player.cachedMessages or '[]')
             qa = []
             for i in range(len(messages) - 1):
                 if (messages[i]["role"] == "assistant" and messages[i + 1]["role"] == "user"):

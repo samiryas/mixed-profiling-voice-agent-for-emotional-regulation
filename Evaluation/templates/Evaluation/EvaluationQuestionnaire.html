@@ -333,9 +333,9 @@
     </table>
     </div>
     <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
-    <h3>Depression</h3>
-    <p><b>Explanation:</b> This dimension reflects low mood and loss of interest, including feelings such as sadness, hopelessness, and lack of motivation.</p>
-    <p><b>Your Profile:</b> {{ depression }}</p>
+    <h3>Reappraisal</h3>
+    <p><b>Explanation:</b> This dimension reflects how much someone tries to change the way they think about a situation in order to change how they feel about it.</p>
+    <p><b>Your Profile:</b> {{ reappraisal }}</p>
     <table class="table">
         <thead>
             <tr>
@@ -355,7 +355,7 @@
                 <tr>
                     <td>In my opinion the information and data provided by the text are:</td>
                     <td>useless</td>
-                    {% for choice in form.questionnaire_depression_useful %}
+                    {% for choice in form.questionnaire_reappraisal_useful %}
                         <td align="center">
                             {{choice}}
                         </td>
@@ -365,7 +365,7 @@
                 <tr>
                     <td>In my opinion the information and data provided by the text are:</td>
                     <td>implausible</td>
-                    {% for choice in form.questionnaire_depression_plausible %}
+                    {% for choice in form.questionnaire_reappraisal_plausible %}
                         <td align="center">
                             {{choice}}
                         </td>
@@ -375,7 +375,7 @@
                                 <tr>
                     <td>In my opinion the information and data provided by the text are:</td>
                     <td>untrustworthy</td>
-                    {% for choice in form.questionnaire_depression_trustworthy %}
+                    {% for choice in form.questionnaire_reappraisal_trustworthy %}
                         <td align="center">
                             {{choice}}
                         </td>
@@ -385,7 +385,7 @@
                                 <tr>
                     <td>In my opinion the information and data provided by the text are:</td>
                     <td>inaccurate</td>
-                    {% for choice in form.questionnaire_depression_accurate %}
+                    {% for choice in form.questionnaire_reappraisal_accurate %}
                         <td align="center">
                             {{choice}}
                         </td>
@@ -396,9 +396,9 @@
     </table>
     </div>
     <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
-    <h3>Anxiety</h3>
-    <p><b>Explanation:</b> This dimension reflects physical tension and fear, including symptoms such as nervousness, panic, and strong bodily signs of anxiety.</p>
-    <p><b>Your Profile:</b> {{ anxiety }}</p>
+    <h3>Suppression</h3>
+    <p><b>Explanation:</b> This dimension reflects how much someone tries to hide or hold back their emotional expressions.</p>
+    <p><b>Your Profile:</b> {{ suppression }}</p>
     <table class="table">
         <thead>
             <tr>
@@ -418,7 +418,7 @@
                 <tr>
                     <td>In my opinion the information and data provided by the text are:</td>
                     <td>useless</td>
-                    {% for choice in form.questionnaire_anxiety_useful %}
+                    {% for choice in form.questionnaire_suppression_useful %}
                         <td align="center">
                             {{choice}}
                         </td>
@@ -428,7 +428,7 @@
                 <tr>
                     <td>In my opinion the information and data provided by the text are:</td>
                     <td>implausible</td>
-                    {% for choice in form.questionnaire_anxiety_plausible %}
+                    {% for choice in form.questionnaire_suppression_plausible %}
                         <td align="center">
                             {{choice}}
                         </td>
@@ -438,7 +438,7 @@
                                 <tr>
                     <td>In my opinion the information and data provided by the text are:</td>
                     <td>untrustworthy</td>
-                    {% for choice in form.questionnaire_anxiety_trustworthy %}
+                    {% for choice in form.questionnaire_suppression_trustworthy %}
                         <td align="center">
                             {{choice}}
                         </td>
@@ -448,70 +448,7 @@
                                 <tr>
                     <td>In my opinion the information and data provided by the text are:</td>
                     <td>inaccurate</td>
-                    {% for choice in form.questionnaire_anxiety_accurate %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>accurate </td>
-                </tr>
-        </tbody>
-    </table>
-    </div>
-    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
-    <h3>Stress</h3>
-    <p><b>Explanation:</b> This dimension reflects persistent tension and irritability, including feeling over‑aroused, unable to relax, and easily upset or frustrated.</p>
-    <p><b>Your Profile:</b> {{ stress }}</p>
-    <table class="table">
-        <thead>
-            <tr>
-                <th style="width: 45%">Statements</th>
-                <th style="width: 11%"></th>
-                <th style="width: 4%">1</th>
-                <th style="width: 4%">2</th>
-                <th style="width: 4%">3</th>
-                <th style="width: 4%">4</th>
-                <th style="width: 4%">5</th>
-                <th style="width: 4%">6</th>
-                <th style="width: 4%">7</th>
-                <th style="width: 11%"></th>
-            </tr>
-        </thead>
-        <tbody>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>useless</td>
-                    {% for choice in form.questionnaire_stress_useful %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>useful</td>
-                </tr>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>implausible</td>
-                    {% for choice in form.questionnaire_stress_plausible %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>plausible</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>untrustworthy</td>
-                    {% for choice in form.questionnaire_stress_trustworthy %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>trustworthy</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>inaccurate</td>
-                    {% for choice in form.questionnaire_stress_accurate %}
+                    {% for choice in form.questionnaire_suppression_accurate %}
                         <td align="center">
                             {{choice}}
                         </td>

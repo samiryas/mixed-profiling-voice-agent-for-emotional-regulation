@@ -8,7 +8,7 @@ from utils.ai import runGPT, runGPTModel
 from utils.promting import renderPrompt
 from . import models
 
-from .models import BIG5_CHOICES, BIG5_FIELDS, DASS_CHOICES, DASS_FIELDS, Constants, Player, Profile
+from .models import BIG5_CHOICES, BIG5_FIELDS, ERQ_CHOICES, ERQ_FIELDS, Constants, Player, Profile
 from otree.api import *
 from sqlalchemy.inspection import inspect
 
@@ -32,8 +32,14 @@ class Introduction(Page):
 
 class BigFive(Page):
     form_model = 'player'
-    form_fields = [name for name, _ in BIG5_FIELDS]
-    random.shuffle(form_fields)
+
+    def get_form_fields(self):
+        order = self.participant.vars.get('big5_order')
+        if not order:
+            order = [name for name, _ in BIG5_FIELDS]
+            random.shuffle(order)
+            self.participant.vars['big5_order'] = order
+        return order
       
     @staticmethod
     def live_method(player, data):
@@ -54,14 +60,20 @@ class BigFiveT2(BigFive):
             self.player.treatment_questionnaire = random.choice([1, 2])
         return self.player.treatment_questionnaire == 2
     
-class Dass(Page):
+class ERQ(Page):
     form_model = 'player'
-    form_fields = [name for name, _ in DASS_FIELDS]
-    random.shuffle(form_fields)
+
+    def get_form_fields(self):
+        order = self.participant.vars.get('erq_order')
+        if not order:
+            order = [name for name, _ in ERQ_FIELDS]
+            random.shuffle(order)
+            self.participant.vars['erq_order'] = order
+        return order
 
     @staticmethod
     def live_method(player, data):
-        player.timestamp_dass = data['timestamp_dass']
+        player.timestamp_erq = data['timestamp_erq']
 
 class Prolific(Page):
     form_model = 'player'
@@ -87,13 +99,20 @@ class Privacy(Page):
 class Processing(Page):
     form_model = 'player'
 
+    def vars_for_template(self):
+        processing_complete = (
+            bool(self.player.profile_questionnaire)
+            and self.player.cachedMessages_questionnaire not in ('', '[]')
+        )
+        return {'processing_complete': processing_complete}
+
     def before_next_page(self):
         self.participant.vars['cached_messages'] = self.player.cachedMessages_questionnaire
         self.participant.vars['profile_questionnaire'] = self.player.profile_questionnaire
 
     @staticmethod
     async def live_method(player: Player, data):
-        msg_type = data.get("type")        
+        msg_type = data.get("type")
         if msg_type == "status" and player.profile_questionnaire == '':
             yield {player.id_in_group: 'running' }
             logging.info("Starting Profiling")
@@ -104,14 +123,14 @@ class Processing(Page):
                     if attr.key in [key for key, _ in BIG5_FIELDS]
                 },
                 **{
-                    attr.key: dict(DASS_CHOICES).get(getattr(player, attr.key))
+                    attr.key: dict(ERQ_CHOICES).get(getattr(player, attr.key))
                     for attr in inspect(Player).attrs
-                    if attr.key in [key for key, _ in DASS_FIELDS]
+                    if attr.key in [key for key, _ in ERQ_FIELDS]
                 }
             }
             data = {
                 'big5_fields': BIG5_FIELDS,
-                'dass_fields': DASS_FIELDS,
+                'erq_fields': ERQ_FIELDS,
                 'data': values,
                 'response_model': Profile.model_json_schema()
             }
@@ -122,8 +141,6 @@ class Processing(Page):
             messages.append({'role':'user','content': renderPrompt('Introduction/templates/Prompts/Modelling.txt', data)})
             profile = await runGPTModel(messages, Profile)
             logging.info("Profile modeled")
-            player.profilingMessages_questionnaire = json.dumps(messages)
-            player.profile_questionnaire = profile.model_dump_json()
             data["profile_questionnaire"] = profile
             cachedMessages = [
                 {'role': 'system', 'content': renderPrompt('Chat/templates/Prompts/System.txt', data)},
@@ -135,10 +152,13 @@ class Processing(Page):
             question_1 = await runGPT(messages_interview)
             logging.info("Generated Question")
             cachedMessages.append({'role':'assistant', 'content': question_1})
+            # All awaits are finished here, safe to write profiling info into player data.
+            player.profilingMessages_questionnaire = json.dumps(messages)
             player.cachedMessages_questionnaire = json.dumps(cachedMessages)
+            player.profile_questionnaire = profile.model_dump_json()
             yield {player.id_in_group: 'done' }
             return
 
 page_sequence = [
-    Prolific, Privacy, BigFiveT1, Dass, BigFiveT2, Processing
+    Prolific, Privacy, BigFiveT1, ERQ, BigFiveT2, Processing
 ]

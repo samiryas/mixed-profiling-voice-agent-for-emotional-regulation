@@ -24,9 +24,8 @@ class EvaluationQuestionnaire(Page):
             'conscientiousness': profile_questionnaire['conscientiousness'],
             'neuroticism': profile_questionnaire['neuroticism'],
             'openness': profile_questionnaire['openness'],
-            'depression': profile_questionnaire['depression'],
-            'anxiety': profile_questionnaire['anxiety'],
-            'stress': profile_questionnaire['stress']
+            'reappraisal': profile_questionnaire['reappraisal'],
+            'suppression': profile_questionnaire['suppression']
         }
 
     @staticmethod
@@ -65,9 +64,8 @@ class EvaluationInterview(Page):
             'conscientiousness': profile_interview['conscientiousness'],
             'neuroticism': profile_interview['neuroticism'],
             'openness': profile_interview['openness'],
-            'depression': profile_interview['depression'],
-            'anxiety': profile_interview['anxiety'],
-            'stress': profile_interview['stress']
+            'reappraisal': profile_interview['reappraisal'],
+            'suppression': profile_interview['suppression']
         }
 
     def before_next_page(self):
@@ -77,9 +75,8 @@ class EvaluationInterview(Page):
         self.player.refinement_conscientiousness = profile_interview['conscientiousness']
         self.player.refinement_neuroticism = profile_interview['neuroticism']
         self.player.refinement_openness = profile_interview['openness']
-        self.player.refinement_depression = profile_interview['depression']
-        self.player.refinement_anxiety = profile_interview['anxiety']
-        self.player.refinement_stress = profile_interview['stress']    
+        self.player.refinement_reappraisal = profile_interview['reappraisal']
+        self.player.refinement_suppression = profile_interview['suppression']
 
     @staticmethod
     def live_method(player, data):
@@ -88,7 +85,7 @@ class EvaluationInterview(Page):
 
 class Refinement(Page):
     form_model = 'player'
-    form_fields = ['refinement_extraversion','refinement_agreeableness','refinement_conscientiousness','refinement_neuroticism','refinement_openness','refinement_depression','refinement_anxiety','refinement_stress']    
+    form_fields = ['refinement_extraversion','refinement_agreeableness','refinement_conscientiousness','refinement_neuroticism','refinement_openness','refinement_reappraisal','refinement_suppression']
 
     @staticmethod
     def live_method(player, data):

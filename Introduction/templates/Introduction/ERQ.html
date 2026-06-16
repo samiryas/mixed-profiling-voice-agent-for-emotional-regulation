@@ -1,18 +1,21 @@
 {% extends 'global/Page.html' %}
 
 {% block title %}
-    Mental Health
+    Emotion Regulation
 {% endblock %}
 
 {% block content %}
     <div class="explanation-container">
-        Please read each statement and rate which indicates how much the statement applied to you <b>over the past week.</b> 
-        There are no right or wrong answers. Do not spend too much time on any statement. 
+        Please read each statement and indicate how much you agree or disagree with it.
+        There are no right or wrong answers. Do not spend too much time on any statement.
         <ul>
-            <li>Never: Did not apply to me at all</li>
-            <li>Sometimes: Applied to me to some degree, or some of the time</li>
-            <li>Often: Applied to me to a considerable degree, or a good part of time</li>
-            <li>Almost Always: Applied to me very much, or most of the time</li>
+            <li>1 = Strongly disagree</li>
+            <li>2 = Disagree</li>
+            <li>3 = Slightly disagree</li>
+            <li>4 = Neutral</li>
+            <li>5 = Slightly agree</li>
+            <li>6 = Agree</li>
+            <li>7 = Strongly agree</li>
         </ul>
     </div>
 
@@ -20,11 +23,14 @@
     <table class="table">
         <thead>
             <tr>
-                <th style="width: 65%">Statements</th>
-                <th style="width: 8%">Never</th>
-                <th style="width: 8%">Sometimes</th>
-                <th style="width: 8%">Often</th>
-                <th style="width: 8%">Almost Always</th>
+                <th style="width: 35%">Statements</th>
+                <th style="width: 9%">Strongly disagree</th>
+                <th style="width: 9%">Disagree</th>
+                <th style="width: 9%">Slightly disagree</th>
+                <th style="width: 9%">Neutral</th>
+                <th style="width: 9%">Slightly agree</th>
+                <th style="width: 9%">Agree</th>
+                <th style="width: 9%">Strongly agree</th>
             </tr>
         </thead>
         <tbody>
@@ -49,7 +55,7 @@
     document.addEventListener("DOMContentLoaded", function() {
         const timestamp = Date.now() / 1000; // Sekunden mit Millisekunden-Präzision
         console.log(timestamp)
-        liveSend({'timestamp_dass': timestamp})
+        liveSend({'timestamp_erq': timestamp})
     });
 </script>
 {{ endblock }}
