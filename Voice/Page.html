@@ -1,0 +1,54 @@
+{{ extends "global/Page.html" }}
+{{ load static otree }}
+
+{{ block app_styles }}
+<style>
+    .otree-body { font-size: 18px; overflow: hidden; }
+    .otree-timer { display: none; }
+
+    .container { max-width: 1200px; }
+
+    .infoBox {
+        min-height: 300px; text-align: center; padding: 15px;
+        display: flex; flex-direction: column; justify-content: center;
+    }
+    .chatPanel {
+        display: flex; flex-direction: column;
+        width: 500px; height: 500px; margin: 5px auto; padding: 0;
+    }
+    .chatHeader {
+        background: #343434; color: white; padding: 10px; border-radius: 8px 8px 0 0;
+    }
+    .chatMessages {
+        background: white; border: 1px solid #ccc; border-radius: 0 0 8px 8px;
+        padding: 1rem; overflow-x: hidden; overflow-y: auto; flex: 1;
+        display: flex; flex-direction: column; scrollbar-gutter: stable;
+    }
+
+    .message {
+        position: relative; text-align: right; margin-bottom: 10px;
+        padding: 10px 10px 10px 12px; border-radius: 20px; max-width: 80%;
+        word-wrap: break-word; align-self: flex-end; display: block; width: fit-content;
+    }
+    .sysMsg  { background-color: #204a79; color: #e4e4e4; text-align: left;  align-self: flex-start; }
+    .botMsg  { background-color: #38A1F3; color: #fff;    text-align: left;  align-self: flex-start; }
+    .selfMsg { background-color: #eeeeee; color: #000;    text-align: right; align-self: flex-end; }
+
+    .typing-indicator { display: flex; gap: 4px; padding: 4px 8px; }
+    .typing-indicator span {
+        width: 8px; height: 8px; background-color: #fff; border-radius: 50%;
+        animation: typing 1s infinite ease-in-out;
+    }
+    .typing-indicator span:nth-child(1) { animation-delay: 0.2s; }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.3s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typing { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    .typing { max-width: 60px; padding: 8px; }
+
+    .chatMessages::-webkit-scrollbar { width: 1vw; }
+    .chatMessages::-webkit-scrollbar-thumb { background: #9e9e9e; border-radius: 2vw; }
+    .chatMessages::-webkit-scrollbar-track { background: #ddd; border-radius: 0 0 2vw 2vw; }
+
+    #micIcon, #soundIcon { width: 80px; color: #abaaaa; }
+</style>
+{{ endblock }}

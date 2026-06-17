@@ -7,6 +7,10 @@ SESSION_CONFIGS = [
         dict(name='Chat', app_sequence=['Chat'], num_demo_participants=1),
         dict(name='Evaluation', app_sequence=['Evaluation'], num_demo_participants=1),
         dict(name='Outro', app_sequence=['Outro'], num_demo_participants=1,prolific_return_code='xxxx',prolific_return_url='https://www.prolific.com/xxx'),
+        # Module 2 — Voice Session (scaffold). Standalone config for dev/testing;
+        # will be chained after the profiling apps in FullExperiment once the
+        # session flow (phases, shell screens) is built out.
+        dict(name='Voice', app_sequence=['Voice'], num_demo_participants=1),
 ]
 
 # if you set a property in SESSION_CONFIG_DEFAULTS, it will be inherited by all configs
