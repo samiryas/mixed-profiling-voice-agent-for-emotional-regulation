@@ -220,9 +220,9 @@ class Session(Page):
             audioURL = None
             audioPath = ''
             try:
-                audio = await synthesize(reply, voice_id=C.VOICE_ID)
+                audio, ext = await synthesize(reply, voice_id=C.VOICE_ID)
                 if audio:
-                    audioPath = _save_audio(f'{player.session.code}_{botMsgId}.mp3', audio)
+                    audioPath = _save_audio(f'{player.session.code}_{botMsgId}.{ext}', audio)
                     audioURL = audioPath
             except Exception:
                 logger.exception('TTS failed (continuing text-only)')

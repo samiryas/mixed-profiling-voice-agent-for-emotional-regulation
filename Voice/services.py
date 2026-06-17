@@ -6,7 +6,7 @@ backend is selected independently via an env var and defaults to the stub:
 
     VOICE_STT_BACKEND = stub | whisper-local   (target per design D14: faster-whisper, GDPR-local)
     VOICE_LLM_BACKEND = stub | kit             (KIT Toolbox gpt-oss:120b, OpenAI-compatible endpoint)
-    VOICE_TTS_BACKEND = stub | elevenlabs
+    VOICE_TTS_BACKEND = stub | say (macOS, zero-install) | piper | elevenlabs
 
 Real backends import their heavy dependencies lazily, so importing this module
 never requires faster-whisper / openai / requests unless a real backend is
@@ -86,11 +86,61 @@ async def _generate_reply_kit(messages: list, system_prompt: str) -> str:
 
 # ===== TTS =====================================================================
 
-async def synthesize(text: str, *, voice_id: str) -> bytes:
+async def synthesize(text: str, *, voice_id: str) -> tuple[bytes, str]:
+    """Return (audio_bytes, file_ext). Empty bytes => the client shows text only."""
     if TTS_BACKEND == 'elevenlabs':
-        return await asyncio.to_thread(_synthesize_elevenlabs, text, voice_id)
-    # stub: no audio bytes -> the client shows the transcript only.
-    return b''
+        return await asyncio.to_thread(_synthesize_elevenlabs, text, voice_id), 'mp3'
+    if TTS_BACKEND == 'piper':
+        return await asyncio.to_thread(_synthesize_piper, text), 'wav'
+    if TTS_BACKEND == 'say':
+        return await asyncio.to_thread(_synthesize_say, text), 'wav'
+    # stub: no audio -> the client shows the transcript only.
+    return b'', ''
+
+
+def _synthesize_say(text: str) -> bytes:
+    """macOS built-in TTS (zero install, macOS only). Robotic, but proves the
+    local path with no model download — handy for a first end-to-end run."""
+    import os
+    import subprocess
+    import tempfile
+    fd, path = tempfile.mkstemp(suffix='.wav')
+    os.close(fd)
+    try:
+        subprocess.run(
+            ['say', '-o', path, '--data-format=LEI16@22050', text],
+            check=True, capture_output=True,
+        )
+        with open(path, 'rb') as f:
+            return f.read()
+    finally:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
+
+
+def _synthesize_piper(text: str) -> bytes:
+    """Local neural TTS via the piper CLI (`pip install piper-tts` + a voice).
+    Set PIPER_VOICE to the voice model path, e.g. de_DE-thorsten-medium.onnx."""
+    import os
+    import subprocess
+    import tempfile
+    model = environ['PIPER_VOICE']
+    fd, path = tempfile.mkstemp(suffix='.wav')
+    os.close(fd)
+    try:
+        subprocess.run(
+            ['piper', '-m', model, '-f', path],
+            input=text.encode('utf-8'), check=True, capture_output=True,
+        )
+        with open(path, 'rb') as f:
+            return f.read()
+    finally:
+        try:
+            os.unlink(path)
+        except OSError:
+            pass
 
 
 def _synthesize_elevenlabs(text: str, voice_id: str) -> bytes:

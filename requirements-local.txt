@@ -1,0 +1,8 @@
+# Extra dependencies for the fully-local voice stack (voice-local-stack branch).
+# Install into your venv on top of requirements.txt:
+#     pip install -r requirements-local.txt
+#
+# Not needed for the default stubs, nor for the macOS `say` TTS backend.
+
+faster-whisper>=1.0   # local STT  -> VOICE_STT_BACKEND=whisper-local
+piper-tts>=1.2        # local neural TTS -> VOICE_TTS_BACKEND=piper (also needs a voice .onnx)
