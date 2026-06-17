@@ -2,14 +2,13 @@ import load_env  # noqa: F401
 from os import environ
 
 SESSION_CONFIGS = [
-        dict(name='FullExperiment', app_sequence=['Introduction','Chat',"Evaluation","Outro"], num_demo_participants=10,prolific_return_code='xxxx',prolific_return_url='https://www.prolific.com/xxx'),
+        dict(name='FullExperiment', app_sequence=['Introduction','Chat','Voice',"Evaluation","Outro"], num_demo_participants=10,prolific_return_code='xxxx',prolific_return_url='https://www.prolific.com/xxx'),
         dict(name='Introduction', app_sequence=['Introduction'], num_demo_participants=1),
         dict(name='Chat', app_sequence=['Chat'], num_demo_participants=1),
         dict(name='Evaluation', app_sequence=['Evaluation'], num_demo_participants=1),
         dict(name='Outro', app_sequence=['Outro'], num_demo_participants=1,prolific_return_code='xxxx',prolific_return_url='https://www.prolific.com/xxx'),
-        # Module 2 — Voice Session (scaffold). Standalone config for dev/testing;
-        # will be chained after the profiling apps in FullExperiment once the
-        # session flow (phases, shell screens) is built out.
+        # Module 2 — Voice Session. Chained into FullExperiment after Chat (so it
+        # has the refined profile); also exposed standalone for dev/testing.
         dict(name='Voice', app_sequence=['Voice'], num_demo_participants=1),
 ]
 
