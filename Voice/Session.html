@@ -13,9 +13,6 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        const form = document.querySelector('form');
-        if (form) form.addEventListener('submit', e => e.preventDefault());
-
         // spacebar toggles recording; stop it from scrolling the page
         window.addEventListener('keydown', function (e) {
             if (e.code === 'Space' || e.keyCode === 32) { e.preventDefault(); return false; }
@@ -162,5 +159,9 @@
             </div>
         </div>
     </div>
+</div>
+
+<div style="text-align: right; margin-top: 15px;">
+    {{ next_button }}
 </div>
 {{ endblock }}
