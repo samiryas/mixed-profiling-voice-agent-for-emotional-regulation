@@ -38,7 +38,7 @@ class C(BaseConstants):
     RECORDINGS_DIR = '_static/Voice/recordings'
 
     # ElevenLabs voice id (only used when VOICE_TTS_BACKEND=elevenlabs)
-    VOICE_ID = environ.get('VOICE_ID', 'rf6Kp06FksMr0VCBn1Pf')
+    VOICE_ID = environ.get('VOICE_ID', 'EXAVITQu4vr4xnSDxMaL')
 
     # Experimental condition for this run. Real per-participant assignment is a
     # later task ("Config externalization + condition assignment"); for the
@@ -50,12 +50,13 @@ class C(BaseConstants):
 # ----- profile + prompt helpers ------------------------------------------------
 
 def _load_profile(player) -> str:
-    """Read the contextualized user profile produced by Module 1 (Mixed Profiling).
+    """Read the single end profile produced by Module 1.
 
-    The profiling apps store the refined profile in participant.vars, which is
-    persisted in the shared database keyed by participant — so the voice module
-    reads it by participant id (D12). Prefers the interview-refined profile,
-    falls back to the questionnaire profile, then to empty.
+    Profiling is one lineage: Introduction builds the initial profile from the
+    questionnaire, and Chat refines it with the voice interview into the end
+    profile. Both are written to participant.vars, so the voice module reads the
+    end profile by participant id, falling back to the initial profile if the
+    refinement step has not run, then to empty.
     """
     pv = player.participant.vars
     return pv.get('profile_interview') or pv.get('profile_questionnaire') or ''
@@ -152,10 +153,22 @@ class Session(Page):
 
     @staticmethod
     def vars_for_template(player):
+        profile = _load_profile(player)
+        condition = player.field_maybe_none('condition') or C.DEFAULT_CONDITION
+        pv = player.participant.vars
+        profile_source = (
+            'interview' if pv.get('profile_interview')
+            else 'questionnaire' if pv.get('profile_questionnaire')
+            else 'none'
+        )
         return dict(
             cached_messages=json.loads(player.cachedMessages or '[]'),
             show_history=C.SHOW_HISTORY,
             currentPlayer='P' + str(player.id_in_group),
+            debug_condition=condition,
+            debug_profile_source=profile_source,
+            debug_profile=profile,
+            debug_system_prompt=_system_prompt(profile, condition),
         )
 
     @staticmethod

@@ -57,7 +57,7 @@ async def _transcribe_faster_whisper(audio_bytes: bytes) -> str:
 # ===== LLM =====================================================================
 
 async def generate_reply(messages: list, *, system_prompt: str) -> str:
-    if LLM_BACKEND == 'kit':
+    if LLM_BACKEND in ('kit', 'openai'):
         return await _generate_reply_kit(messages, system_prompt)
     # stub: echo whether a profile reached the system prompt, to prove the
     # profile-by-PID wiring and condition handling end-to-end.
@@ -105,5 +105,10 @@ def _synthesize_elevenlabs(text: str, voice_id: str) -> bytes:
         params={'output_format': 'mp3_44100_128'},
         timeout=30,
     )
+    if not resp.ok:
+        # ElevenLabs sends the real reason (quota_exceeded,
+        # detected_unusual_activity, needs_billing, ...) in the body — surface it.
+        logger.error('ElevenLabs TTS %s for voice %s: %s',
+                     resp.status_code, voice_id, resp.text)
     resp.raise_for_status()
     return resp.content

@@ -75,14 +75,6 @@ class ERQ(Page):
     def live_method(player, data):
         player.timestamp_erq = data['timestamp_erq']
 
-class Prolific(Page):
-    form_model = 'player'
-    form_fields = ['prolific_id']
-
-    @staticmethod
-    def live_method(player, data):
-        player.timestamp_prolific = data['timestamp_prolific']
-
 class Privacy(Page):
     form_model = 'player'
     form_fields = ['privacy_agreement']
@@ -160,5 +152,5 @@ class Processing(Page):
             return
 
 page_sequence = [
-    Prolific, Privacy, BigFiveT1, ERQ, BigFiveT2, Processing
+    Privacy, BigFiveT1, ERQ, BigFiveT2, Processing
 ]

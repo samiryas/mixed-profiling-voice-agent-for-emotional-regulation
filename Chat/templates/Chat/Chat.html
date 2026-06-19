@@ -1,298 +1,190 @@
 {% extends 'Chat/Page.html' %}
 
-
-
 {% block title %}
-
     <div class="d-flex justify-content-center">
-
-        <h2 style="margin-bottom:20px">Chat Interaction</h2>
-
+        <h2 style="margin-bottom:20px">Voice Interview</h2>
     </div>
-
 {% endblock %}
 
-
-
 {{ block scripts }}
-
 <script>
 
+    const STATIC_BASE = window.location.origin + '/static/Voice/recordings/';
+
+    function getAudioUrl(audioPath) {
+        if (audioPath.startsWith('http')) return audioPath;
+        return STATIC_BASE + audioPath;
+    }
+
     let typingId = 'typing';
-
     let chatMessages;
-
-    let chatInput;
-
     let form;
 
-
-
-    document.addEventListener('DOMContentLoaded', function() {
-
+    document.addEventListener('DOMContentLoaded', function () {
         form = document.getElementById('form');
-
-        chatInput = document.getElementById('chatinput');
-
         chatMessages = document.getElementById('chatMessages');
 
+        if (form) form.addEventListener('submit', e => e.preventDefault());
 
-
-        form.addEventListener('submit', function(e) {
-
-            e.preventDefault();
-
+        // spacebar toggles recording; stop it from scrolling the page
+        window.addEventListener('keydown', function (e) {
+            if (e.code === 'Space' || e.keyCode === 32) { e.preventDefault(); return false; }
         });
 
-
-
-        chatInput.addEventListener('keydown', function (event) {
-
-            if (event.key === 'Enter') {
-
-                sendMsg();
-
-            }
-
-        });
-
-
-
-        setTimeout(() => chatInput.focus(), 100);
-
+        // open the live channel (replays any cached messages)
+        liveSend({});
     });
 
+    // ---- audio recording (spacebar to start/stop) ----
+    const spacebarKey = 32;
+    let isRecording = false;
+    let audioRecorder;
+    let audioChunks = [];
 
-
-    function sendMsg() {
-
-        const text = chatInput.value.trim();
-
-        if (text) {
-
-            liveSend({'event': 'text', 'text': text});
-
-            chatInput.value = '';
-
-            typingId = 'typing-' + Date.now();
-
-            let typingHtml = `
-
-                <div class="message botMsg typing" id="${typingId}">
-
-                    <div class="typing-indicator">
-
-                        <span></span>
-
-                        <span></span>
-
-                        <span></span>
-
-                    </div>
-
-                </div>
-
-            `;
-
-            setTimeout(() => {
-
-                chatMessages.insertAdjacentHTML('beforeend', typingHtml);
-
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-
-            }, 100);
-
+    function toggleRecording(event) {
+        if (event.keyCode === spacebarKey && !event.repeat) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!isRecording) {
+                isRecording = true;
+                audioChunks = [];
+                audioRecorder.start();
+                document.getElementById('micIcon').style.color = '#38A1F3';
+            } else {
+                isRecording = false;
+                audioRecorder.stop();
+                document.getElementById('micIcon').style.color = '#abaaaa';
+            }
         }
-
     }
 
+    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+        .then(stream => {
+            audioRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=opus' });
+            audioRecorder.addEventListener('dataavailable', e => audioChunks.push(e.data));
+            audioRecorder.addEventListener('stop', () => {
+                const blob = new Blob(audioChunks, { type: 'video/webm' });
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64 = reader.result.split(',')[1];
+                    liveSend({ 'event': 'text', 'text': base64 });
+                    // show a typing indicator while the bot prepares its question
+                    typingId = 'typing-' + Date.now();
+                    chatMessages.insertAdjacentHTML('beforeend', `
+                        <div class="message botMsg typing" id="${typingId}">
+                            <div class="typing-indicator"><span></span><span></span><span></span></div>
+                        </div>`);
+                    chatMessages.scrollTop = chatMessages.scrollHeight;
+                };
+                reader.readAsDataURL(blob);
+            });
+            document.addEventListener('keydown', toggleRecording);
+        })
+        .catch(err => console.error('getUserMedia error:', err));
 
-
+    // ---- live receive ----
     function liveRecv(data) {
-
         const status = data.status || data;
-
+        // the interview is over (eight questions reached) -> advance to Processing
         if (status === "done") {
-
             form.submit();
-
             return;
-
         }
 
-        let event = data["event"];
+        const event = data['event'];
 
-        // Handle text messages send by humans
+        // surface server-side errors (e.g. STT/LLM failure)
+        if (data.error) {
+            chatMessages.insertAdjacentHTML('beforeend', `
+                <div class="message sysMsg"><strong>System<br></strong> ${data.error}</div>`);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            const t = document.getElementById(typingId);
+            if (t) t.remove();
+            return;
+        }
 
+        // participant's own (transcribed) answer echoed back
         if (event == 'text') {
-
-            const messageId = data.msgId;
-
-            const selfText = data.selfText;
-
-            const sender = data.sender;
-
-            let messageHtml = `
-
-                <div class="message selfMsg" id="${messageId}" data-author="${sender}">
-
-                    <strong>You<br></strong> ${selfText}
-
-                </div>
-
-            `;
-
-            chatMessages.insertAdjacentHTML('beforeend', messageHtml);
-
+            chatMessages.insertAdjacentHTML('beforeend', `
+                <div class="message selfMsg" id="${data.msgId}" data-author="${data.sender}">
+                    <strong>You<br></strong> ${data.selfText}
+                </div>`);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            // ask the bot for its next question
+            liveSend({ 'event': 'botMsg' });
 
-            liveSend({'event': 'botMsg'});
-
-        // handle bot messages
-
+        // bot question (text + optional spoken audio)
         } else if (event == 'botText') {
-
-            const botMsgId = data.botMsgId;
-
-            const text = data.text;
-
-            const sender = data.sender;
-
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-
             setTimeout(() => {
+                const t = document.getElementById(typingId);
+                if (t) t.remove();
 
-                const typingIndicator = document.getElementById(typingId);
-
-                if (typingIndicator) {
-
-                    typingIndicator.remove();
-
-                }
-
-                let botHtml = `
-
-                    <div class="message botMsg" id="${botMsgId}" data-author="${sender}">
-
-                        <strong>${sender}<br></strong> ${text}
-
-                    </div>
-
-                `;
-
-                chatMessages.insertAdjacentHTML('beforeend', botHtml);
-
+                chatMessages.insertAdjacentHTML('beforeend', `
+                    <div class="message botMsg" id="${data.botMsgId}" data-author="${data.sender}">
+                        <strong>Bot<br></strong> ${data.text}
+                    </div>`);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
 
+                if (data.audioFilePath) {
+                    const soundIcon = document.getElementById('soundIcon');
+                    const audio = new Audio(getAudioUrl(data.audioFilePath));
+                    audio.addEventListener('play', () => { soundIcon.style.color = '#38A1F3'; });
+                    audio.addEventListener('ended', () => { soundIcon.style.color = '#abaaaa'; });
+                    audio.play().catch(e => console.error('Play error:', e));
+                }
             }, 1000);
-
         }
-
     }
-
 </script>
-
 {{ endblock }}
-
-
-
 
 
 {{ block content }}
-
 <div class='container card mb-4'>
-
     <div class='row no-gutters' style="width: 100%;">
 
+        <!-- left: mic / speaker + instructions -->
         <div class='infoBox col-4 d-flex col-md-4 align-items-center justify-content-center' style='font-size:22px; height: 100%; min-height: 300px;'>
-
             <p>
-
                 <b>Task:</b>
-
                 <br>
-
-                    Please answer the chatbot's questions as accurately as possible so that a suitable profile can be created for you.<br>
-
-                    Please answer the questions in <b>English</b>.
-
+                Please answer the chatbot's questions out loud as accurately as possible so that a suitable profile can be created for you.<br>
+                Please answer the questions in <b>English</b>.
                 <br><br>
-
                 The Chatbot will ask you <b>eight questions.</b>
-
             </p>
-
+            <div style="display: flex; gap: 30px; align-items: center; margin-top: 15px; justify-content: center;">
+                <svg id="micIcon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                <svg id="soundIcon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            </div>
+            <br>
+            Tap the spacebar to start recording your answer. Tap again to stop and send.
         </div>
 
-
-
-        <!-- right side of interface, with chat box and text input -->
-
+        <!-- right: transcript -->
         <div class='chatPanel col-8 col-md-8' id='chatPanel'>
-
             <div class='chatHeader'>
-
                 Chat Bot
-
             </div>
-
             <div id='chatMessages' class='chatMessages'>
-
                 {% if cached_messages %}
-
                     {% for msg in cached_messages %}
-
-                        {% if msg.role == 'assistant' %}                    
-
-                            <div class="message botMsg" >
-
+                        {% if msg.role == 'assistant' %}
+                            <div class="message botMsg">
                                 <strong>Bot<br></strong> {{ msg.content }}
-
-                            </div>    
-
+                            </div>
                         {% endif %}
-
-                        {% if msg.role == 'user' %}                    
-
-                            <div class="message selfMsg" >
-
+                        {% if msg.role == 'user' %}
+                            <div class="message selfMsg">
                                 <strong>You<br></strong> {{ msg.content }}
-
-                            </div>    
-
+                            </div>
                         {% endif %}
-
                     {% endfor %}
-
                 {% endif %}
-
-            
-
             </div>
-
-        
-
-            <div class='inputBox'>
-
-                <div class='typeInputBox'>
-
-                    <input type='text' id='chatinput' style='text-align:left;'>
-
-                    <button type='button' onclick='sendMsg()'>Send</button>
-
-                </div>
-
-            </div> 
-
         </div>
-
     </div>
-
 </div>
-
 <form id="form" method="post"></form>
 
-
-
 {{ endblock }}
-
