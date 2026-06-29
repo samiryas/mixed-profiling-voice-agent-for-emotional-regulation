@@ -80,9 +80,7 @@ class Profile(BaseModel):
 class Player(BasePlayer):
     timestamp_bigfive  = models.FloatField(initial=0)
     timestamp_erq  = models.FloatField(initial=0)
-    timestamp_prolific  = models.FloatField(initial=0)
     timestamp_privacy = models.FloatField(initial=0)
-    prolific_id = models.StringField(label='Please enter your Prolific ID')
 
     privacy_agreement = models.BooleanField(
         label="To continue please first accept our survey privacy policy.",

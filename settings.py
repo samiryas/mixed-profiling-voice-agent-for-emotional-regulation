@@ -2,11 +2,13 @@ import load_env  # noqa: F401
 from os import environ
 
 SESSION_CONFIGS = [
-        dict(name='FullExperiment', app_sequence=['Introduction','Chat',"Evaluation","Outro"], num_demo_participants=10,prolific_return_code='xxxx',prolific_return_url='https://www.prolific.com/xxx'),
+        dict(name='FullExperiment', app_sequence=['Introduction','Chat','Voice','Evaluation'], num_demo_participants=10),
         dict(name='Introduction', app_sequence=['Introduction'], num_demo_participants=1),
         dict(name='Chat', app_sequence=['Chat'], num_demo_participants=1),
+        # Module 2 — Voice Session. Standalone config for dev/testing; also chained
+        # after the profiling apps in FullExperiment.
+        dict(name='Voice', app_sequence=['Voice'], num_demo_participants=1),
         dict(name='Evaluation', app_sequence=['Evaluation'], num_demo_participants=1),
-        dict(name='Outro', app_sequence=['Outro'], num_demo_participants=1,prolific_return_code='xxxx',prolific_return_url='https://www.prolific.com/xxx'),
 ]
 
 # if you set a property in SESSION_CONFIG_DEFAULTS, it will be inherited by all configs
@@ -19,7 +21,7 @@ SESSION_CONFIG_DEFAULTS = dict(
 )
 
 PARTICIPANT_FIELDS = []
-SESSION_FIELDS = ['ProlificID']
+SESSION_FIELDS = []
 
 # ISO-639 code
 # for example: de, fr, ja, ko, zh-hans

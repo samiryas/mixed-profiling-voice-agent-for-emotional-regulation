@@ -112,3 +112,7 @@ wtforms==2.3.3
     #   wtforms-sqlalchemy
 wtforms-sqlalchemy==0.2
     # via otree
+
+# Voice session STT (only needed when VOICE_STT_BACKEND=whisper-local).
+# Runs locally so participant audio never leaves the machine.
+faster-whisper==1.2.1

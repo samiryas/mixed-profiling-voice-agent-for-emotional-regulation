@@ -37,11 +37,12 @@ class MessageData(ExtraModel):
     sender = models.StringField()
     fullText = models.StringField()
     msgText = models.StringField()
+    audioPath = models.StringField(initial='')
 
 # custom export of chatLog
 def custom_export(players):
     # header row
-    yield [ 'sessionId',  'subjectId', 'msgId', 'timestamp', 'sender', 'fullText', 'msgText']
+    yield [ 'sessionId',  'subjectId', 'msgId', 'timestamp', 'sender', 'fullText', 'msgText', 'audioPath']
     mData = MessageData.filter()
     for m in mData:
         player = m.player
@@ -53,4 +54,4 @@ def custom_export(players):
             fullText = m.fullText
 
         # write to csv
-        yield [ session.code, participant.code, m.msgId, m.timestamp, m.sender, fullText, m.msgText]
+        yield [ session.code, participant.code, m.msgId, m.timestamp, m.sender, fullText, m.msgText, m.audioPath]

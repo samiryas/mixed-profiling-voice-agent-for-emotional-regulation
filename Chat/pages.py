@@ -1,14 +1,31 @@
 import json
 import logging
+import os
+import base64
+from os import environ
 from otree.api import Currency as c, currency_range
 
 from Introduction.models import Profile
 from utils.ai import runGPT, runGPTModel
 from utils.promting import renderPrompt
+from Voice.services import transcribe, synthesize
 from . import models
 from .models import Constants, MessageData, Player
 from otree.api import *
 from datetime import datetime, timezone
+
+# the interview is now conducted by voice; audio is saved alongside the Voice
+# module's recordings so it is served at /static/Voice/recordings/<file>
+RECORDINGS_DIR = '_static/Voice/recordings'
+VOICE_ID = environ.get('VOICE_ID', 'EXAVITQu4vr4xnSDxMaL')
+SAVE_USER_AUDIO = True
+
+
+def _save_audio(filename: str, audio: bytes) -> str:
+    os.makedirs(RECORDINGS_DIR, exist_ok=True)
+    with open(os.path.join(RECORDINGS_DIR, filename), 'wb') as f:
+        f.write(audio)
+    return filename
 
 
 class Chat(Page):
@@ -55,8 +72,20 @@ class Chat(Page):
                 # create message id
                 dateNow = str(datetime.now(tz=timezone.utc).timestamp())
                 msgId = currentPlayer + '-' + str(dateNow)
-                # grab text format for llm
-                text = data['text']
+
+                # decode the recorded audio, persist it, then transcribe (STT)
+                b64 = base64.b64decode(data['text'])
+                audioPath = ''
+                if SAVE_USER_AUDIO:
+                    audioPath = _save_audio(f'{player.session.code}_{msgId}.webm', b64)
+
+                try:
+                    text = await transcribe(b64)
+                except Exception as e:
+                    logging.exception('STT failed')
+                    yield {player.id_in_group: {'error': f'Transcription failed: {e}'}}
+                    return
+
                 inputMsg = {'role': 'user', 'content': text}
 
                 # create message data in database
@@ -67,6 +96,7 @@ class Chat(Page):
                     sender = 'Subject',
                     fullText = json.dumps(inputMsg),
                     msgText = text,
+                    audioPath = audioPath,
                 )
                 # add message to list and update cache
                 messages.append(inputMsg)
@@ -83,7 +113,8 @@ class Chat(Page):
             elif event == 'botMsg':
                 assistant_count = len([msg for msg in messages if msg.get("role") == "assistant"])
 
-                if assistant_count >= 8:
+                # one question per dimension: 5 Big Five + reappraisal + suppression = 7
+                if assistant_count >= 7:
                     yield {player.id_in_group: 'done' }
                     return
                 # grab bot info
@@ -92,11 +123,23 @@ class Chat(Page):
                 dateNow = str(datetime.now(tz=timezone.utc).timestamp())
                 botMsgId = 'B' + '-' + str(dateNow)
                 botMessages = messages.copy()
-                botMessages.append({'role':'user','content':"Please ask your next question and stick to your system prompt and the given procedure! Consider whether it is worthwhile to ask a follow-up question or to address another dimension that has not been tackled."})
+                botMessages.append({'role':'user','content':"Please ask your next question and stick to your system prompt and the given procedure! Ask about a dimension that has not yet been addressed so that each of the seven dimensions (the five Big Five traits plus Reappraisal and Suppression) is covered exactly once."})
                 #botText = await runGPT(messages)
                 botText = await runGPT(botMessages)
                 botMsg = {'role': 'assistant', 'content': botText}
-                
+
+                # synthesize the spoken question (TTS); the stub backend returns
+                # no bytes, so the client falls back to showing the transcript only
+                audioURL = None
+                audioPath = ''
+                try:
+                    audio = await synthesize(botText, voice_id=VOICE_ID)
+                    if audio:
+                        audioPath = _save_audio(f'{player.session.code}_{botMsgId}.mp3', audio)
+                        audioURL = audioPath
+                except Exception:
+                    logging.exception('TTS failed (continuing text-only)')
+
                 # save to database
                 MessageData.create(
                     player=player,
@@ -105,6 +148,7 @@ class Chat(Page):
                     sender=botId,
                     fullText=json.dumps(botMsg),
                     msgText=botText,
+                    audioPath=audioPath,
                 )
 
                 # update cache with bot message
@@ -117,6 +161,7 @@ class Chat(Page):
                     sender=botId,
                     botMsgId=botMsgId,
                     text=botText,
+                    audioFilePath=audioURL,
                 )}
                 return
 

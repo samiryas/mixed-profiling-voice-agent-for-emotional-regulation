@@ -17,3 +17,7 @@ deployments/
 ./requirements.in
 ./docker-compose.yaml
 .env
+
+# Voice session audio (keep the dir, ignore the recordings)
+_static/Voice/recordings/*
+!_static/Voice/recordings/.gitkeep
