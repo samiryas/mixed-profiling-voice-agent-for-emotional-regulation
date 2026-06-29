@@ -7,6 +7,13 @@ import logging
 from datetime import datetime, timezone
 
 from .services import transcribe, generate_reply, synthesize
+from .prompts import (
+    build_system_prompt,
+    extract_advance_flag,
+    phase_name,
+    is_last_phase,
+    min_duration,
+)
 
 doc = """
 Module 2 — Voice Session (scaffold).
@@ -62,18 +69,8 @@ def _load_profile(player) -> str:
     return pv.get('profile_interview') or pv.get('profile_questionnaire') or ''
 
 
-def _system_prompt(profile: str, condition: str) -> str:
-    """Scaffold system prompt. The real layered persona + four phase blocks are a
-    later task ("Author & version-control system prompts")."""
-    base = (
-        "You are a warm, attuned emotion-regulation coach. Help the participant "
-        "reflect on and reappraise what they share. Keep replies short and "
-        "spoken-friendly."
-    )
-    # T1 withholds the profile from the agent; T2/T3 inject it.
-    if condition != 'T1' and profile:
-        return base + "\n\nUser profile (personalize to this person):\n" + profile
-    return base
+# The layered system prompt (persona + AI disclosure -> condition-based profile block ->
+# current phase block -> pacing instruction) is assembled in prompts.build_system_prompt().
 
 
 # ----- models ------------------------------------------------------------------
@@ -97,6 +94,11 @@ class Player(BasePlayer):
     condition = models.StringField(initial='')
     # running JSON cache of the conversation
     cachedMessages = models.LongStringField(initial='[]')
+    # four-phase session state (D18)
+    current_phase = models.IntegerField(initial=0)
+    current_phase_started = models.FloatField(initial=0)
+    # list of {phase, started_at, advanced_at} transition records (post-hoc HRV3 segmentation)
+    phase_log = models.LongStringField(initial='[]')
 
 
 class MessageData(ExtraModel):
@@ -110,7 +112,7 @@ class MessageData(ExtraModel):
 
 def custom_export(players):
     yield [
-        'sessionId', 'participantId', 'condition',
+        'sessionId', 'participantId', 'condition', 'phaseLog',
         'msgId', 'timestamp', 'sender', 'msgText', 'audioPath',
     ]
     for m in MessageData.filter():
@@ -119,6 +121,7 @@ def custom_export(players):
             p.session.code,
             p.participant.code,
             p.field_maybe_none('condition') or '',
+            p.field_maybe_none('phase_log') or '[]',
             m.msgId,
             m.timestamp,
             m.sender,
@@ -165,10 +168,11 @@ class Session(Page):
             cached_messages=json.loads(player.cachedMessages or '[]'),
             show_history=C.SHOW_HISTORY,
             currentPlayer='P' + str(player.id_in_group),
+            current_phase_name=phase_name(player.current_phase),
             debug_condition=condition,
             debug_profile_source=profile_source,
             debug_profile=profile,
-            debug_system_prompt=_system_prompt(profile, condition),
+            debug_system_prompt=build_system_prompt(profile, condition, player.current_phase),
         )
 
     @staticmethod
@@ -214,12 +218,17 @@ class Session(Page):
 
         # ---- bot turn: LLM reply (KIT) -> TTS -> playback ---------------------
         if event == 'botMsg':
-            dateNow = str(datetime.now(tz=timezone.utc).timestamp())
+            now_ts = datetime.now(tz=timezone.utc).timestamp()
+            dateNow = str(now_ts)
             botMsgId = botLabel + '-' + dateNow
+
+            # anchor the first phase's clock on the first bot turn
+            if not player.current_phase_started:
+                player.current_phase_started = now_ts
 
             profile = _load_profile(player)
             condition = player.field_maybe_none('condition') or C.DEFAULT_CONDITION
-            system_prompt = _system_prompt(profile, condition)
+            system_prompt = build_system_prompt(profile, condition, player.current_phase)
 
             try:
                 reply = await generate_reply(messages, system_prompt=system_prompt)
@@ -227,6 +236,26 @@ class Session(Page):
                 logger.exception('LLM failed')
                 yield {player.id_in_group: {'error': f'LLM failed: {e}'}}
                 return
+
+            # strip the readiness flag before the text reaches TTS or the transcript (D18/FR22)
+            reply, wants_advance = extract_advance_flag(reply)
+
+            # hybrid phase transition: honour the flag only once the phase's minimum duration
+            # has elapsed; log the timestamp; finish after the last phase (D18)
+            session_done = False
+            if wants_advance and (now_ts - player.current_phase_started) >= min_duration(player.current_phase):
+                log = json.loads(player.phase_log or '[]')
+                log.append({
+                    'phase': phase_name(player.current_phase),
+                    'started_at': player.current_phase_started,
+                    'advanced_at': now_ts,
+                })
+                player.phase_log = json.dumps(log)
+                if is_last_phase(player.current_phase):
+                    session_done = True
+                else:
+                    player.current_phase += 1
+                    player.current_phase_started = now_ts
 
             # TTS -> save mp3. The stub backend returns no bytes, so the client
             # falls back to showing the transcript only.
@@ -250,6 +279,7 @@ class Session(Page):
             yield {player.id_in_group: dict(
                 event='botText', sender=botLabel, botMsgId=botMsgId,
                 text=reply, audioFilePath=audioURL,
+                phase=phase_name(player.current_phase), sessionDone=session_done,
             )}
             return
 

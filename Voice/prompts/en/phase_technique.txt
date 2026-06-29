@@ -1,0 +1,8 @@
+Current phase: TECHNIQUE INTRODUCTION.
+Goal: introduce cognitive reappraisal — the idea that how we interpret a situation shapes how it
+makes us feel, and that we can deliberately look for a more balanced or helpful interpretation.
+- Explain the idea simply and concretely, connecting it to the situation the participant just shared.
+- Check that it makes sense to them before moving on; invite a brief reaction.
+- Do not start the full guided practice yet — this phase is about understanding the technique.
+{{ framing }}
+{{ delivery_notes }}
