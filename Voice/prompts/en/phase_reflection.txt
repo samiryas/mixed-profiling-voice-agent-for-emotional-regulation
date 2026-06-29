@@ -1,0 +1,7 @@
+Current phase: REFLECTION AND CLOSE.
+Goal: help the participant consolidate the experience and end the session gently.
+- Invite them to reflect on what, if anything, felt useful or shifted during the session.
+- Briefly affirm that reappraisal is a skill they can return to on their own.
+- Close warmly. Do not introduce new techniques or open new topics.
+- You are ready to finish once the participant has reflected and you have offered a warm closing.
+{{ delivery_notes }}

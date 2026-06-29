@@ -12,6 +12,17 @@
         return STATIC_BASE + audioPath;
     }
 
+    // ---- session end ----
+    let sessionEnded = false;
+    function finishSession() {
+        if (sessionEnded) return;
+        sessionEnded = true;
+        // form.submit() (the DOM method) bypasses the preventDefault submit handler and
+        // advances the oTree page sequence.
+        const form = document.querySelector('form');
+        if (form) form.submit();
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         const form = document.querySelector('form');
         if (form) form.addEventListener('submit', e => e.preventDefault());
@@ -36,6 +47,7 @@
     let audioChunks = [];
 
     function toggleRecording(event) {
+        if (sessionEnded) return;
         if (event.keyCode === spacebarKey && !event.repeat) {
             event.preventDefault();
             event.stopPropagation();
@@ -115,8 +127,17 @@
                     const soundIcon = document.getElementById('soundIcon');
                     const audio = new Audio(getAudioUrl(data.audioFilePath));
                     audio.addEventListener('play', () => { soundIcon.style.color = '#38A1F3'; });
-                    audio.addEventListener('ended', () => { soundIcon.style.color = '#abaaaa'; });
-                    audio.play().catch(e => console.error('Play error:', e));
+                    audio.addEventListener('ended', () => {
+                        soundIcon.style.color = '#abaaaa';
+                        if (data.sessionDone) finishSession();
+                    });
+                    audio.play().catch(e => {
+                        console.error('Play error:', e);
+                        if (data.sessionDone) finishSession();
+                    });
+                } else if (data.sessionDone) {
+                    // no audio (e.g. stub TTS): give the closing line a beat to be read
+                    setTimeout(finishSession, 1500);
                 }
             }, 1200);
         }
@@ -138,6 +159,9 @@
             </div>
             <br>
             Tap the spacebar to start recording. Tap again to stop and send.
+            <br>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-3"
+                    onclick="finishSession()">End session</button>
         </div>
 
         <!-- right: transcript -->

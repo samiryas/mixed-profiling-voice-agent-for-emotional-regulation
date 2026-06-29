@@ -1,0 +1,66 @@
+# Local stack for the Mixed-Profiling voice agent.
+# Provisions PostgreSQL + Redis (Redis is required by `otree prodserver`) and,
+# optionally, the oTree app itself.
+#
+# Two ways to run:
+#
+#   A) Fast dev loop — backing services in Docker, oTree on the host:
+#        cp .env.example .env            # fill in OPENAI_*/OTREE_* secrets
+#        docker compose up -d db redis
+#        otree resetdb && otree devserver
+#
+#   B) Full containerized stack (prodserver, closest to production):
+#        docker compose run --rm web sh -c "yes | otree resetdb"   # one-time schema init
+#        docker compose up                                          # web + db + redis -> http://localhost:8000
+#
+# `db` and `redis` ports are published to the host so option A works; the `web`
+# service overrides DATABASE_URL/REDIS_URL to reach them by compose hostname.
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-otree}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-otree}
+      POSTGRES_DB: ${POSTGRES_DB:-otree}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-otree} -d ${POSTGRES_DB:-otree}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    env_file: .env
+    environment:
+      # Override the localhost values from .env so the container reaches the
+      # db/redis services by their compose hostnames.
+      DATABASE_URL: postgresql://${POSTGRES_USER:-otree}:${POSTGRES_PASSWORD:-otree}@db:5432/${POSTGRES_DB:-otree}
+      REDIS_URL: redis://redis:6379
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    # Schema is created by `otree resetdb` (run once, see header). prodserver
+    # does not migrate on its own, so we keep startup non-destructive here.
+    command: ["otree", "prodserver", "8000"]
+
+volumes:
+  pgdata:

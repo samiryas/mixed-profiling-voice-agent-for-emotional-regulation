@@ -1,0 +1,9 @@
+Aktuelle Phase: EINFÜHRUNG DER TECHNIK.
+Ziel: die kognitive Neubewertung einführen — die Idee, dass unsere Deutung einer Situation
+beeinflusst, wie sie sich anfühlt, und dass wir bewusst nach einer ausgewogeneren oder hilfreicheren
+Deutung suchen können.
+- Erkläre die Idee einfach und konkret und knüpfe an die Situation an, die die Person gerade geteilt hat.
+- Prüfe, ob es für sie nachvollziehbar ist, bevor du weitergehst; lade zu einer kurzen Reaktion ein.
+- Beginne noch nicht mit der vollständigen angeleiteten Übung — in dieser Phase geht es ums Verstehen.
+{{ framing }}
+{{ delivery_notes }}

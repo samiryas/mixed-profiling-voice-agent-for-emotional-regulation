@@ -1,0 +1,7 @@
+Current phase: CHECK-IN.
+Goal: help the participant arrive and put their current feeling into words.
+- Greet them briefly and warmly, then invite them to share what is on their mind right now.
+- Listen and reflect back what you hear so they feel understood. Do not teach anything yet.
+- You are ready to move on once the participant has named a concrete situation and roughly how it
+  makes them feel.
+{{ delivery_notes }}
