@@ -15,7 +15,9 @@ __pycache__/
 .venv/
 deployments/
 ./requirements.in
-./docker-compose.yaml
+# Track the canonical docker-compose.yml; ignore local-only overrides.
+docker-compose.override.yml
+docker-compose.override.yaml
 .env
 
 # Voice session audio (keep the dir, ignore the recordings)

@@ -103,6 +103,39 @@ Admin interface:
 
 ------------------------------------------------------------------------
 
+## Local stack with Docker (PostgreSQL + Redis)
+
+oTree uses PostgreSQL whenever `DATABASE_URL` points at a postgres database
+(otherwise it falls back to SQLite). `docker-compose.yml` provisions PostgreSQL
+and Redis so the project runs on the same backend as production.
+
+### Option A — backing services in Docker, oTree on the host (fast dev loop)
+
+    cp .env.example .env          # then fill in OPENAI_* / OTREE_* secrets
+    docker compose up -d db redis # start PostgreSQL + Redis
+    otree resetdb                 # create the schema on PostgreSQL
+    otree devserver               # http://localhost:8000
+
+`.env` ships with `DATABASE_URL=postgresql://otree:otree@localhost:5432/otree`
+and `REDIS_URL=redis://localhost:6379`, matching the compose services.
+
+### Option B — full containerized stack (prodserver)
+
+    docker compose run --rm web sh -c "yes | otree resetdb"  # one-time schema init
+    docker compose up                                         # web + db + redis
+
+The `web` service overrides `DATABASE_URL`/`REDIS_URL` to reach the `db` and
+`redis` containers by hostname, so no `.env` changes are needed between options.
+
+### Verifying the database
+
+    docker compose exec db psql -U otree -d otree -c "\dt"   # tables exist after resetdb
+
+Admin data export (CSV per app, including the Voice session's `custom_export`)
+is available under `/admin` once the server is running.
+
+------------------------------------------------------------------------
+
 ## Study Configuration Notes
 
 -   `OTREE_AUTH_LEVEL=STUDY` enables participant-based access control.
