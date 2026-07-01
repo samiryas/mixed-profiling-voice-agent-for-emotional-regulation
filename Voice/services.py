@@ -86,28 +86,67 @@ async def _generate_reply_kit(messages: list, system_prompt: str) -> str:
 
 # ===== TTS =====================================================================
 
-async def synthesize(text: str, *, voice_id: str) -> bytes:
+async def synthesize(
+    text: str,
+    *,
+    voice_id: str,
+    voice_settings: dict | None = None,
+) -> bytes:
     if TTS_BACKEND == 'elevenlabs':
-        return await asyncio.to_thread(_synthesize_elevenlabs, text, voice_id)
+        return await asyncio.to_thread(
+            _synthesize_elevenlabs, text, voice_id, voice_settings,
+        )
     # stub: no audio bytes -> the client shows the transcript only.
     return b''
 
 
-def _synthesize_elevenlabs(text: str, voice_id: str) -> bytes:
-    """High-quality TTS (design D13). Receives only generated text — no
-    participant audio or profile data leaves KIT infrastructure."""
+def _elevenlabs_tts_request(text: str, voice_id: str, voice_settings: dict | None):
+    """POST to ElevenLabs TTS; returns the requests Response (caller checks .ok)."""
     import requests
+
     key = (environ.get('ELEVENLABS_KEY') or '').strip()
-    resp = requests.post(
+    payload = {'text': text, 'model_id': 'eleven_multilingual_v2'}
+    if voice_settings:
+        payload['voice_settings'] = voice_settings
+    return requests.post(
         f'https://api.elevenlabs.io/v1/text-to-speech/{voice_id}',
         headers={'xi-api-key': key, 'Content-Type': 'application/json'},
-        json={'text': text, 'model_id': 'eleven_multilingual_v2'},
+        json=payload,
         params={'output_format': 'mp3_44100_128'},
         timeout=30,
     )
+
+
+def _synthesize_elevenlabs(
+    text: str,
+    voice_id: str,
+    voice_settings: dict | None = None,
+) -> bytes:
+    """High-quality TTS (design D13). Receives only generated text — no
+    participant audio or profile data leaves KIT infrastructure.
+
+    When ``voice_settings`` is provided and the API rejects it (unsupported
+    parameter, model quirk, etc.), retries once with default voice settings
+    (fail-open — same pattern as sentiment/acoustics).
+    """
+    from .tts_settings import default_voice_settings
+
+    resp = _elevenlabs_tts_request(text, voice_id, voice_settings)
+    if not resp.ok and voice_settings:
+        logger.warning(
+            'ElevenLabs TTS failed with state voice_settings %s (fail-open -> defaults): %s',
+            voice_settings, resp.text,
+        )
+        fallback = default_voice_settings()
+        resp = _elevenlabs_tts_request(text, voice_id, fallback)
+        if not resp.ok:
+            logger.warning(
+                'ElevenLabs TTS failed with default voice_settings (fail-open -> no settings): %s',
+                resp.text,
+            )
+            resp = _elevenlabs_tts_request(text, voice_id, None)
+
     if not resp.ok:
-        # ElevenLabs sends the real reason (quota_exceeded,
-        # detected_unusual_activity, needs_billing, ...) in the body — surface it.
         logger.error('ElevenLabs TTS %s for voice %s: %s',
                      resp.status_code, voice_id, resp.text)
     resp.raise_for_status()

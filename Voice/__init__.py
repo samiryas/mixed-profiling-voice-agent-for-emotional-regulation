@@ -238,6 +238,7 @@ class Session(Page):
             # (skipped when the participant has no calibration baseline recording).
             state_changed = False
             new_state = None
+            tts_voice_settings = None  # T3 only — NFR3: T1/T2 must stay None (fixed stimulus)
             if condition == 'T3':
                 from .sentiment import analyse_sentiment, classify_state
                 from .acoustics import get_baseline, extract_features, compute_deltas
@@ -288,6 +289,10 @@ class Session(Page):
                 if state_changed:
                     player.emotional_state = new_state
 
+                # TTS pacing follows persisted state every turn (not trigger-only like the prompt).
+                from .tts_settings import voice_settings_for_emotional_state
+                tts_voice_settings = voice_settings_for_emotional_state(player.emotional_state)
+
                 # surface the per-turn decision in the server log (pilot monitoring)
                 logger.info(
                     "[T3 %s] sentiment=%s (%.2f) | deltas pitch=%+.2f rate=%+.2f pause=%+.2f%s "
@@ -308,6 +313,8 @@ class Session(Page):
                     'score': sentiment['score'],
                     'state': new_state,
                     'state_changed': state_changed,
+                    'tts_state': player.emotional_state,
+                    'tts_voice_settings': tts_voice_settings,
                 })
                 player.sentiment_log = json.dumps(log)
 
@@ -346,10 +353,16 @@ class Session(Page):
 
             # TTS -> save mp3. The stub backend returns no bytes, so the client
             # falls back to showing the transcript only.
+            # NFR3: only T3 passes state-derived voice_settings; T1/T2 use ElevenLabs defaults.
             audioURL = None
             audioPath = ''
             try:
-                audio = await synthesize(reply, voice_id=C.VOICE_ID)
+                if condition == 'T3':
+                    audio = await synthesize(
+                        reply, voice_id=C.VOICE_ID, voice_settings=tts_voice_settings,
+                    )
+                else:
+                    audio = await synthesize(reply, voice_id=C.VOICE_ID)
                 if audio:
                     audioPath = _save_audio(f'{player.session.code}_{botMsgId}.mp3', audio)
                     audioURL = audioPath
