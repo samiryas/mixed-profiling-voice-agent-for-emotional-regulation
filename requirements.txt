@@ -126,3 +126,9 @@ transformers>=4.40
 librosa==0.10.2.post1
 soundfile>=0.12
 imageio-ffmpeg>=0.5
+
+# HRV_pipeline: Polar H10 BLE capture + RMSSD analysis/visualization (D8).
+bleak==0.22.0
+pandas==2.0.0
+numpy==1.24.0
+matplotlib==3.7.0
