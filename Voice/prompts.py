@@ -67,8 +67,17 @@ def erq_framing(condition: str, profile: str) -> str:
 
 # ----- prompt assembly ---------------------------------------------------------
 
-def build_system_prompt(profile: str, condition: str, phase_index: int) -> str:
-    """Assemble the layered system prompt for the current turn."""
+def build_system_prompt(
+    profile: str,
+    condition: str,
+    phase_index: int,
+    emotional_state: str | None = None,
+) -> str:
+    """Assemble the layered system prompt for the current turn.
+
+    `emotional_state` is T3-only: when provided (i.e. on a state transition), the
+    matching state instruction block is appended after the existing layers.
+    """
     d = _prompt_dir()
     persona = renderPrompt(f"{d}/persona.txt", {})
 
@@ -85,9 +94,22 @@ def build_system_prompt(profile: str, condition: str, phase_index: int) -> str:
     phase_block = renderPrompt(f"{d}/phase_{phase_name(phase_index)}.txt", phase_ctx)
     advance = renderPrompt(f"{d}/advance.txt", {})
 
+    # T3 only: append the state instruction on transition (trigger-only adaptation).
+    state_block = ""
+    if emotional_state is not None:
+        state_block = _load_state_block(emotional_state)
+
     return "\n\n".join(
-        b.strip() for b in (persona, profile_block, phase_block, advance) if b.strip()
+        b.strip() for b in (persona, profile_block, phase_block, advance, state_block) if b.strip()
     )
+
+
+def _load_state_block(state: str) -> str:
+    """Load Voice/prompts/<LANG>/state_<state>.txt. Return "" if missing (fail-open)."""
+    try:
+        return renderPrompt(f"{_prompt_dir()}/state_{state}.txt", {})
+    except Exception:
+        return ""
 
 
 # ----- readiness flag ----------------------------------------------------------

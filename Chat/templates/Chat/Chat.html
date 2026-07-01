@@ -33,6 +33,15 @@
 
         // open the live channel (replays any cached messages)
         liveSend({});
+
+        const skipBtn = document.getElementById('skipChatBtn');
+        if (skipBtn) {
+            skipBtn.addEventListener('click', () => {
+                skipBtn.disabled = true;
+                liveSend({ event: 'skip' });
+                form.submit();
+            });
+        }
     });
 
     // ---- audio recording (spacebar to start/stop) ----
@@ -159,6 +168,12 @@
             </div>
             <br>
             Tap the spacebar to start recording your answer. Tap again to stop and send.
+            {% if dev_skip_chat %}
+            <br><br>
+            <button type="button" class="btn btn-outline-warning btn-sm" id="skipChatBtn">
+                [Dev] Skip interview → Voice session
+            </button>
+            {% endif %}
         </div>
 
         <!-- right: transcript -->

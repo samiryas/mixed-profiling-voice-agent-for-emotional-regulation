@@ -1,5 +1,7 @@
+import base64
 import json
 import logging
+import os
 import random
 import threading
 from otree.api import Currency as c, currency_range
@@ -87,6 +89,41 @@ class Privacy(Page):
         player.timestamp_privacy = data['timestamp_privacy']
 
 
+# Voice calibration baseline lives where the live session reads it from
+# (Voice/acoustics.get_baseline globs {dir}/{participant.code}_calibration.*).
+CALIBRATION_DIR = '_static/Voice/recordings'
+
+
+class Calibration(Page):
+    form_model = 'player'
+
+    @staticmethod
+    def live_method(player, data):
+        if data.get('timestamp_calibration'):
+            player.timestamp_calibration = data['timestamp_calibration']
+            return
+
+        if data.get('event') == 'calibration':
+            audio = base64.b64decode(data['audio'])
+            os.makedirs(CALIBRATION_DIR, exist_ok=True)
+            filename = f'{player.participant.code}_calibration.webm'
+            filepath = os.path.join(CALIBRATION_DIR, filename)
+            with open(filepath, 'wb') as f:
+                f.write(audio)
+            player.calibration_audio = filename
+            # hand off to Voice (FullExperiment + IntroVoice share participant.vars)
+            player.participant.vars['calibration_audio'] = filename
+            player.participant.vars['calibration_audio_path'] = filepath
+            return {player.id_in_group: {'event': 'saved'}}
+
+
+    def before_next_page(self):
+        if self.player.calibration_audio:
+            filepath = os.path.join(CALIBRATION_DIR, self.player.calibration_audio)
+            self.participant.vars['calibration_audio'] = self.player.calibration_audio
+            self.participant.vars['calibration_audio_path'] = filepath
+
+
 
 class Processing(Page):
     form_model = 'player'
@@ -101,6 +138,11 @@ class Processing(Page):
     def before_next_page(self):
         self.participant.vars['cached_messages'] = self.player.cachedMessages_questionnaire
         self.participant.vars['profile_questionnaire'] = self.player.profile_questionnaire
+        if self.player.calibration_audio:
+            self.participant.vars['calibration_audio'] = self.player.calibration_audio
+            self.participant.vars['calibration_audio_path'] = os.path.join(
+                CALIBRATION_DIR, self.player.calibration_audio,
+            )
 
     @staticmethod
     async def live_method(player: Player, data):
@@ -152,5 +194,5 @@ class Processing(Page):
             return
 
 page_sequence = [
-    Privacy, BigFiveT1, ERQ, BigFiveT2, Processing
+    Privacy, Calibration, BigFiveT1, ERQ, BigFiveT2, Processing
 ]

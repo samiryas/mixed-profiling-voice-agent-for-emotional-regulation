@@ -116,3 +116,12 @@ wtforms-sqlalchemy==0.2
 # Voice session STT (only needed when VOICE_STT_BACKEND=whisper-local).
 # Runs locally so participant audio never leaves the machine.
 faster-whisper==1.2.1
+
+# T3 live adaptation (FR12/FR13/FR14): per-turn German sentiment + acoustic features.
+# Sentiment uses oliverguhr/german-sentiment-bert via transformers (local, GDPR).
+# librosa extracts pitch/speech-rate/pause-rate; WebM/Opus decoded via ffmpeg.
+torch>=2.0
+transformers>=4.40
+librosa==0.10.2.post1
+soundfile>=0.12
+imageio-ffmpeg>=0.5

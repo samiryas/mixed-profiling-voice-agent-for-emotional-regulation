@@ -81,6 +81,8 @@ class Player(BasePlayer):
     timestamp_bigfive  = models.FloatField(initial=0)
     timestamp_erq  = models.FloatField(initial=0)
     timestamp_privacy = models.FloatField(initial=0)
+    timestamp_calibration = models.FloatField(initial=0)
+    calibration_audio     = models.StringField(initial='')   # saved baseline filename
 
     privacy_agreement = models.BooleanField(
         label="To continue please first accept our survey privacy policy.",

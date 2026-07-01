@@ -99,6 +99,9 @@ class Player(BasePlayer):
     current_phase_started = models.FloatField(initial=0)
     # list of {phase, started_at, advanced_at} transition records (post-hoc HRV3 segmentation)
     phase_log = models.LongStringField(initial='[]')
+    # T3 emotional state tracking (FR13/FR14)
+    emotional_state = models.StringField(initial='calm')    # calm | moderate_distress | high_distress
+    sentiment_log   = models.LongStringField(initial='[]')  # [{turn_ts, label, score, state, state_changed}]
 
 
 class MessageData(ExtraModel):
@@ -112,7 +115,7 @@ class MessageData(ExtraModel):
 
 def custom_export(players):
     yield [
-        'sessionId', 'participantId', 'condition', 'phaseLog',
+        'sessionId', 'participantId', 'condition', 'phaseLog', 'sentimentLog',
         'msgId', 'timestamp', 'sender', 'msgText', 'audioPath',
     ]
     for m in MessageData.filter():
@@ -122,6 +125,7 @@ def custom_export(players):
             p.participant.code,
             p.field_maybe_none('condition') or '',
             p.field_maybe_none('phase_log') or '[]',
+            p.field_maybe_none('sentiment_log') or '[]',
             m.msgId,
             m.timestamp,
             m.sender,
@@ -228,7 +232,90 @@ class Session(Page):
 
             profile = _load_profile(player)
             condition = player.field_maybe_none('condition') or C.DEFAULT_CONDITION
-            system_prompt = build_system_prompt(profile, condition, player.current_phase)
+
+            # ---- T3 live adaptation: per-turn sentiment + 3-state classifier (FR12/FR13/FR14)
+            # Runs server-side, T3 only. Sentiment always runs; acoustics are fail-open
+            # (skipped when the participant has no calibration baseline recording).
+            state_changed = False
+            new_state = None
+            if condition == 'T3':
+                from .sentiment import analyse_sentiment, classify_state
+                from .acoustics import get_baseline, extract_features, compute_deltas
+
+                # most recent participant turn: transcript (from cache) + saved audio (from DB)
+                transcript_text = ''
+                audio_path = ''
+                for m in reversed(messages):
+                    if m.get('sender') == 'user':
+                        transcript_text = m.get('text', '')
+                        rows = MessageData.filter(player=player, msgId=m.get('msgId'))
+                        if rows and rows[0].audioPath:
+                            audio_path = os.path.join(C.RECORDINGS_DIR, rows[0].audioPath)
+                        break
+
+                # acoustic features for this turn (relative to calibration baseline)
+                cal_path = player.participant.vars.get('calibration_audio_path')
+                if not cal_path:
+                    cal_name = player.participant.vars.get('calibration_audio')
+                    if cal_name:
+                        cal_path = os.path.join(C.RECORDINGS_DIR, cal_name)
+                baseline = get_baseline(
+                    player.participant.code,
+                    calibration_path=cal_path,
+                )
+                acoustics_used = bool(baseline and audio_path)
+                if acoustics_used:  # fail-open if calibration recording is missing
+                    try:
+                        turn_features = extract_features(audio_path)
+                        deltas = compute_deltas(turn_features, baseline)
+                    except Exception:
+                        logger.exception(
+                            "Turn acoustic extraction failed for %s (fail-open)",
+                            player.participant.code,
+                        )
+                        deltas = {"pitch_delta": 0.0, "speech_rate_delta": 0.0, "pause_rate_delta": 0.0}
+                        acoustics_used = False
+                else:
+                    deltas = {"pitch_delta": 0.0, "speech_rate_delta": 0.0, "pause_rate_delta": 0.0}
+
+                # sentiment on the transcript
+                sentiment = analyse_sentiment(transcript_text)
+
+                # classify and detect transition
+                new_state = classify_state(sentiment, **deltas)
+                state_changed = (new_state != player.emotional_state)
+                prev_state = player.emotional_state
+                if state_changed:
+                    player.emotional_state = new_state
+
+                # surface the per-turn decision in the server log (pilot monitoring)
+                logger.info(
+                    "[T3 %s] sentiment=%s (%.2f) | deltas pitch=%+.2f rate=%+.2f pause=%+.2f%s "
+                    "| state=%s%s",
+                    player.participant.code,
+                    sentiment['label'], sentiment['score'],
+                    deltas['pitch_delta'], deltas['speech_rate_delta'], deltas['pause_rate_delta'],
+                    '' if acoustics_used else ' (no baseline: acoustics skipped)',
+                    new_state,
+                    f' (changed from {prev_state})' if state_changed else ' (unchanged)',
+                )
+
+                # log every turn for pilot hand-validation (NFR5 / study design requirement)
+                log = json.loads(player.sentiment_log or '[]')
+                log.append({
+                    'turn_ts': now_ts,
+                    'label': sentiment['label'],
+                    'score': sentiment['score'],
+                    'state': new_state,
+                    'state_changed': state_changed,
+                })
+                player.sentiment_log = json.dumps(log)
+
+            # trigger-only: inject the state instruction on transition, not every turn
+            system_prompt = build_system_prompt(
+                profile, condition, player.current_phase,
+                emotional_state=new_state if state_changed else None,
+            )
 
             try:
                 reply = await generate_reply(messages, system_prompt=system_prompt)

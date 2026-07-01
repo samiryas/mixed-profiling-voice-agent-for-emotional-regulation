@@ -41,12 +41,18 @@ class Chat(Page):
 
     def before_next_page(self):
         self.participant.vars['cached_messages'] = self.player.cachedMessages
+        if self.participant.vars.get('skip_chat'):
+            pq = self.participant.vars.get('profile_questionnaire', '')
+            if pq and not self.player.profile_interview:
+                self.player.profile_interview = pq
+                self.participant.vars['profile_interview'] = pq
 
     def vars_for_template(self):
         self._ensure_cached_messages(self.player)
         cached_messages = json.loads(self.player.cachedMessages or '[]')
         return {
-            'cached_messages': cached_messages
+            'cached_messages': cached_messages,
+            'dev_skip_chat': environ.get('VOICE_DEV_SKIP_CHAT') == '1',
         }
     
     # live method functions (async)
@@ -67,6 +73,10 @@ class Chat(Page):
         if 'event' in data:
             # grab event type
             event = data['event']
+            # dev-only: skip the voice interview and reuse the questionnaire profile
+            if event == 'skip':
+                player.participant.vars['skip_chat'] = True
+                return
             # handle player input logic
             if event == 'text':
                 # create message id
@@ -179,6 +189,12 @@ class Processing(Page):
     async def live_method(player: Player, data):
         msg_type = data.get("type")
         if msg_type == "status" and player.profile_interview == '':
+            if player.participant.vars.get('skip_chat'):
+                pq = player.participant.vars.get('profile_questionnaire', '')
+                if pq:
+                    player.profile_interview = pq
+                yield {player.id_in_group: 'done'}
+                return
             yield {player.id_in_group: 'running' }
             logging.info("Starting Profiling")
             profile_questionnaire = json.loads(player.participant.vars.get('profile_questionnaire', '{}'))

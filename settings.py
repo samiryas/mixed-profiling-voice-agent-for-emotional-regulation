@@ -5,6 +5,8 @@ SESSION_CONFIGS = [
         dict(name='FullExperiment', app_sequence=['Introduction','Chat','Voice','Evaluation'], num_demo_participants=10),
         dict(name='Introduction', app_sequence=['Introduction'], num_demo_participants=1),
         dict(name='Chat', app_sequence=['Chat'], num_demo_participants=1),
+        # Dev shortcut: questionnaires + calibration, then Voice (skips Chat interview).
+        dict(name='IntroVoice', app_sequence=['Introduction','Voice'], num_demo_participants=1),
         # Module 2 — Voice Session. Standalone config for dev/testing; also chained
         # after the profiling apps in FullExperiment.
         dict(name='Voice', app_sequence=['Voice'], num_demo_participants=1),
