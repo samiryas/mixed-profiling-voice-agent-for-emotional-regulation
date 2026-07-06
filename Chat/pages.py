@@ -6,7 +6,9 @@ from os import environ
 from otree.api import Currency as c, currency_range
 
 from Introduction.models import Profile
+from settings import LANG
 from utils.ai import runGPT, runGPTModel
+from utils.live_prompts import live_prompt
 from utils.promting import renderPrompt
 from Voice.services import transcribe, synthesize
 from . import models
@@ -30,6 +32,7 @@ def _save_audio(filename: str, audio: bytes) -> str:
 
 class Chat(Page):
     form_model = 'player'
+    template_name = f'Chat/{LANG}/Chat.html'
 
     @staticmethod
     def _ensure_cached_messages(player: Player):
@@ -93,7 +96,10 @@ class Chat(Page):
                     text = await transcribe(b64)
                 except Exception as e:
                     logging.exception('STT failed')
-                    yield {player.id_in_group: {'error': f'Transcription failed: {e}'}}
+                    yield {player.id_in_group: {'error': (
+                        f'Transkription fehlgeschlagen: {e}' if LANG == 'de'
+                        else f'Transcription failed: {e}'
+                    )}}
                     return
 
                 inputMsg = {'role': 'user', 'content': text}
@@ -133,7 +139,7 @@ class Chat(Page):
                 dateNow = str(datetime.now(tz=timezone.utc).timestamp())
                 botMsgId = 'B' + '-' + str(dateNow)
                 botMessages = messages.copy()
-                botMessages.append({'role':'user','content':"Please ask your next question and stick to your system prompt and the given procedure! Ask about a dimension that has not yet been addressed so that each of the seven dimensions (the five Big Five traits plus Reappraisal and Suppression) is covered exactly once."})
+                botMessages.append({'role':'user','content': live_prompt('next_question')})
                 #botText = await runGPT(messages)
                 botText = await runGPT(botMessages)
                 botMsg = {'role': 'assistant', 'content': botText}
@@ -178,6 +184,7 @@ class Chat(Page):
 
 class Processing(Page):
     form_model = 'player'
+    template_name = f'Chat/{LANG}/Processing.html'
 
     def vars_for_template(self):
         return {'processing_complete': bool(self.player.profile_interview)}
@@ -210,11 +217,11 @@ class Processing(Page):
                 "profile_questionnaire": profile_questionnaire,
                 'response_model': Profile.model_json_schema()
             }
-            messages = [{'role': 'user', 'content': renderPrompt('Chat/templates/Prompts/Profiling.txt', data)}]
+            messages = [{'role': 'user', 'content': renderPrompt(f'Chat/templates/Prompts/{LANG}/Profiling.txt', data)}]
             profile = await runGPT(messages)
             logging.info("Profile text generated")
             messages.append({'role':'assistant', 'content': profile})
-            messages.append({'role':'user','content': renderPrompt('Introduction/templates/Prompts/Modelling.txt', data)})
+            messages.append({'role':'user','content': renderPrompt(f'Introduction/templates/Prompts/{LANG}/Modelling.txt', data)})
             profile = await runGPTModel(messages, Profile)
             logging.info("Profile modeled")
             player.profilingMessages_interview = json.dumps(messages)

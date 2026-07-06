@@ -1,0 +1,475 @@
+{% extends 'global/Page.html' %}
+
+{% block title %}
+    Profilbewertung
+{% endblock %}
+
+{% block content %}
+    <div class="explanation-container">
+        Wir haben Ihnen auf zwei separaten Seiten <b>zwei verschiedene Profile</b> erstellt. 
+        Bitte bewerten Sie beide. <b>Sie können nach der Bewertung eines Profils nicht zurückgehen.</b>
+    </div>
+
+    <div class="explanation-container">
+        Nachfolgend finden Sie eine Übersicht der verschiedenen Dimensionen Ihres persönlichen Nutzerprofils. Für jede Dimension sehen Sie zuerst eine Erklärung, gefolgt von Ihrem persönlichen Profiltext.
+        Bitte beantworten Sie die folgenden Fragen und bewerten Sie die Aussagen.
+        In diesem Experiment gibt es keine richtigen oder falschen Antworten.
+        Uns interessiert nur <b>Ihre persönliche Meinung.</b>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Extraversion</h3>
+    <p><b>Erklärung:</b> Diese Dimension beschreibt, wie kontaktfreudig, energiegeladen und gesellig Sie im Umgang mit anderen sind.</p>
+    <p><b>Ihr Profil:</b> {{ extraversion }}</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Aussagen</th>
+                <th style="width: 11%"></th>
+                <th style="width: 4%">1</th>
+                <th style="width: 4%">2</th>
+                <th style="width: 4%">3</th>
+                <th style="width: 4%">4</th>
+                <th style="width: 4%">5</th>
+                <th style="width: 4%">6</th>
+                <th style="width: 4%">7</th>
+                <th style="width: 11%"></th>
+            </tr>
+        </thead>
+        <tbody>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nutzlos</td>
+                    {% for choice in form.questionnaire_extraversion_nützlich %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>nützlich</td>
+                </tr>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>unplausibel</td>
+                    {% for choice in form.questionnaire_extraversion_plausibel %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>plausibel</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nicht vertrauenswürdig</td>
+                    {% for choice in form.questionnaire_extraversion_vertrauenswürdig %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>vertrauenswürdig</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>ungenau</td>
+                    {% for choice in form.questionnaire_extraversion_genau %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>genau </td>
+                </tr>
+        </tbody>
+    </table>
+    </div>
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Verträglichkeit</h3>
+    <p><b>Erklärung:</b> Diese Dimension beschreibt, wie mitfühlend, kooperativ und rücksichtsvoll Sie gegenüber anderen Menschen sind.</p>
+    <p><b>Ihr Profil:</b> {{ agreeableness }}</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Aussagen</th>
+                <th style="width: 11%"></th>
+                <th style="width: 4%">1</th>
+                <th style="width: 4%">2</th>
+                <th style="width: 4%">3</th>
+                <th style="width: 4%">4</th>
+                <th style="width: 4%">5</th>
+                <th style="width: 4%">6</th>
+                <th style="width: 4%">7</th>
+                <th style="width: 11%"></th>
+            </tr>
+        </thead>
+        <tbody>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nutzlos</td>
+                    {% for choice in form.questionnaire_agreeableness_nützlich %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>nützlich</td>
+                </tr>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>unplausibel</td>
+                    {% for choice in form.questionnaire_agreeableness_plausibel %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>plausibel</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nicht vertrauenswürdig</td>
+                    {% for choice in form.questionnaire_agreeableness_vertrauenswürdig %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>vertrauenswürdig</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>ungenau</td>
+                    {% for choice in form.questionnaire_agreeableness_genau %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>genau </td>
+                </tr>
+        </tbody>
+    </table>
+    </div>
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Gewissenhaftigkeit</h3>
+    <p><b>Erklärung:</b> Diese Dimension beschreibt, wie organisiert, zuverlässig und zielorientiert Sie im Alltag sind.</p>
+    <p><b>Ihr Profil:</b> {{ conscientiousness }}</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Aussagen</th>
+                <th style="width: 11%"></th>
+                <th style="width: 4%">1</th>
+                <th style="width: 4%">2</th>
+                <th style="width: 4%">3</th>
+                <th style="width: 4%">4</th>
+                <th style="width: 4%">5</th>
+                <th style="width: 4%">6</th>
+                <th style="width: 4%">7</th>
+                <th style="width: 11%"></th>
+            </tr>
+        </thead>
+        <tbody>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nutzlos</td>
+                    {% for choice in form.questionnaire_conscientiousness_nützlich %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>nützlich</td>
+                </tr>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>unplausibel</td>
+                    {% for choice in form.questionnaire_conscientiousness_plausibel %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>plausibel</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nicht vertrauenswürdig</td>
+                    {% for choice in form.questionnaire_conscientiousness_vertrauenswürdig %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>vertrauenswürdig</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>ungenau</td>
+                    {% for choice in form.questionnaire_conscientiousness_genau %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>genau </td>
+                </tr>
+        </tbody>
+    </table>
+    </div>
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Neurotizismus</h3>
+    <p><b>Erklärung:</b> Diese Dimension beschreibt, wie stark und wie häufig Sie negative Emotionen wie Sorge erleben.</p>
+    <p><b>Ihr Profil:</b> {{ neuroticism }}</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Aussagen</th>
+                <th style="width: 11%"></th>
+                <th style="width: 4%">1</th>
+                <th style="width: 4%">2</th>
+                <th style="width: 4%">3</th>
+                <th style="width: 4%">4</th>
+                <th style="width: 4%">5</th>
+                <th style="width: 4%">6</th>
+                <th style="width: 4%">7</th>
+                <th style="width: 11%"></th>
+            </tr>
+        </thead>
+        <tbody>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nutzlos</td>
+                    {% for choice in form.questionnaire_neuroticism_nützlich %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>nützlich</td>
+                </tr>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>unplausibel</td>
+                    {% for choice in form.questionnaire_neuroticism_plausibel %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>plausibel</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nicht vertrauenswürdig</td>
+                    {% for choice in form.questionnaire_neuroticism_vertrauenswürdig %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>vertrauenswürdig</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>ungenau</td>
+                    {% for choice in form.questionnaire_neuroticism_genau %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>genau </td>
+                </tr>
+        </tbody>
+    </table>
+    </div>
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Offenheit</h3>
+    <p><b>Erklärung:</b> Diese Dimension beschreibt, wie neugierig, fantasievoll und offen Sie für neue Ideen und Erfahrungen sind.</p>
+    <p><b>Ihr Profil:</b> {{ openness }}</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Aussagen</th>
+                <th style="width: 11%"></th>
+                <th style="width: 4%">1</th>
+                <th style="width: 4%">2</th>
+                <th style="width: 4%">3</th>
+                <th style="width: 4%">4</th>
+                <th style="width: 4%">5</th>
+                <th style="width: 4%">6</th>
+                <th style="width: 4%">7</th>
+                <th style="width: 11%"></th>
+            </tr>
+        </thead>
+        <tbody>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nutzlos</td>
+                    {% for choice in form.questionnaire_openness_nützlich %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>nützlich</td>
+                </tr>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>unplausibel</td>
+                    {% for choice in form.questionnaire_openness_plausibel %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>plausibel</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nicht vertrauenswürdig</td>
+                    {% for choice in form.questionnaire_openness_vertrauenswürdig %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>vertrauenswürdig</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>ungenau</td>
+                    {% for choice in form.questionnaire_openness_genau %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>genau </td>
+                </tr>
+        </tbody>
+    </table>
+    </div>
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Neubewertung</h3>
+    <p><b>Erklärung:</b> Diese Dimension beschreibt, inwieweit jemand versucht, die Art zu verändern, wie er oder sie über eine Situation denkt, um das eigene Gefühl dazu zu verändern.</p>
+    <p><b>Ihr Profil:</b> {{ reappraisal }}</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Aussagen</th>
+                <th style="width: 11%"></th>
+                <th style="width: 4%">1</th>
+                <th style="width: 4%">2</th>
+                <th style="width: 4%">3</th>
+                <th style="width: 4%">4</th>
+                <th style="width: 4%">5</th>
+                <th style="width: 4%">6</th>
+                <th style="width: 4%">7</th>
+                <th style="width: 11%"></th>
+            </tr>
+        </thead>
+        <tbody>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nutzlos</td>
+                    {% for choice in form.questionnaire_reappraisal_nützlich %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>nützlich</td>
+                </tr>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>unplausibel</td>
+                    {% for choice in form.questionnaire_reappraisal_plausibel %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>plausibel</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nicht vertrauenswürdig</td>
+                    {% for choice in form.questionnaire_reappraisal_vertrauenswürdig %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>vertrauenswürdig</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>ungenau</td>
+                    {% for choice in form.questionnaire_reappraisal_genau %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>genau </td>
+                </tr>
+        </tbody>
+    </table>
+    </div>
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Unterdrückung</h3>
+    <p><b>Erklärung:</b> Diese Dimension beschreibt, inwieweit jemand versucht, emotionale Ausdrücke zu verbergen oder zurückzuhalten.</p>
+    <p><b>Ihr Profil:</b> {{ suppression }}</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Aussagen</th>
+                <th style="width: 11%"></th>
+                <th style="width: 4%">1</th>
+                <th style="width: 4%">2</th>
+                <th style="width: 4%">3</th>
+                <th style="width: 4%">4</th>
+                <th style="width: 4%">5</th>
+                <th style="width: 4%">6</th>
+                <th style="width: 4%">7</th>
+                <th style="width: 11%"></th>
+            </tr>
+        </thead>
+        <tbody>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nutzlos</td>
+                    {% for choice in form.questionnaire_suppression_nützlich %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>nützlich</td>
+                </tr>
+                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>unplausibel</td>
+                    {% for choice in form.questionnaire_suppression_plausibel %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>plausibel</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>nicht vertrauenswürdig</td>
+                    {% for choice in form.questionnaire_suppression_vertrauenswürdig %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>vertrauenswürdig</td>
+                </tr>
+                                <tr>
+                    <td>Meiner Meinung nach sind die im Text bereitgestellten Informationen und Daten:</td>
+                    <td>ungenau</td>
+                    {% for choice in form.questionnaire_suppression_genau %}
+                        <td align="center">
+                            {{choice}}
+                        </td>
+                    {% endfor %}
+                    <td>genau </td>
+                </tr>
+        </tbody>
+    </table>
+    </div>
+  
+    <div style="text-align: right; margin-top: 20px;">
+        {{ next_button }}
+    </div>
+{% endblock %}
+
+{{ block scripts }}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const timestamp = Date.now() / 1000;
+        console.log(timestamp)
+        liveSend({'timestamp_evaluate_questionnaire': timestamp})
+    });
+</script>
+{{ endblock }}

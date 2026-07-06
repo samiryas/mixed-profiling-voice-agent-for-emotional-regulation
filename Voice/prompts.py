@@ -11,6 +11,7 @@ thresholds are a separate task ("Finalize personalization thresholds", design re
 import re
 from os import environ
 
+from settings import LANG
 from utils.promting import renderPrompt
 
 # Phase name + default minimum duration in seconds (design ref D18).
@@ -20,8 +21,6 @@ PHASES = [
     ("practice", 180),
     ("reflection", 60),
 ]
-
-LANG = environ.get("VOICE_LANG", "en")
 
 _ADVANCE_RE = re.compile(r'\{\s*"ready_to_advance"\s*:\s*true\s*\}', re.IGNORECASE)
 
@@ -83,7 +82,11 @@ def build_system_prompt(
 
     # T1 withholds the personal profile from the agent; T2/T3 inject it.
     if condition != "T1" and profile:
-        profile_block = "Participant profile (personalize to this person):\n" + profile
+        profile_header = (
+            "Teilnehmerprofil (personalisieren Sie darauf):\n" if LANG == "de"
+            else "Participant profile (personalize to this person):\n"
+        )
+        profile_block = profile_header + profile
     else:
         profile_block = renderPrompt(f"{d}/generic_profile.txt", {})
 

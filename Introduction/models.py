@@ -3,12 +3,14 @@ from otree.api import (
 )
 from pydantic import BaseModel
 
+from settings import LANG
+
 
 doc = """
     Big Five 10-item inventory and ERQ-10
 """
 
-BIG5_FIELDS = [
+BIG5_FIELDS_EN = [
     ('b5_0', "I see myself as someone who is reserved"),
     ('b5_1', "I see myself as someone who is generally trusting"),
     ('b5_2', "I see myself as someone who tends to be lazy"),
@@ -20,6 +22,22 @@ BIG5_FIELDS = [
     ('b5_8', "I see myself as someone who gets nervous easily"),
     ('b5_9', "I see myself as someone who has an active imagination"),
 ]
+
+# Rammstedt & John (2007), BFI-10 — published German items (Appendix A).
+BIG5_FIELDS_DE = [
+    ('b5_0', "Ich bin eher zurückhaltend, reserviert."),
+    ('b5_1', "Ich schenke anderen leicht Vertrauen, glaube an das Gute im Menschen."),
+    ('b5_2', "Ich bin bequem, neige zur Faulheit."),
+    ('b5_3', "Ich bin entspannt, lasse mich durch Stress nicht aus der Ruhe bringen."),
+    ('b5_4', "Ich habe nur wenig künstlerisches Interesse."),
+    ('b5_5', "Ich gehe aus mir heraus, bin gesellig."),
+    ('b5_6', "Ich neige dazu, andere zu kritisieren."),
+    ('b5_7', "Ich erledige Aufgaben gründlich."),
+    ('b5_8', "Ich werde leicht nervös und unsicher."),
+    ('b5_9', "Ich habe eine aktive Vorstellungskraft, bin phantasievoll."),
+]
+
+BIG5_FIELDS = BIG5_FIELDS_DE if LANG == 'de' else BIG5_FIELDS_EN
 
 ERQ_FIELDS = [
     ('erq_0', "When I want to feel more positive emotion (such as joy or amusement), I change what I'm thinking about."),
@@ -56,7 +74,22 @@ def creating_session(subsession):
 class Group(BaseGroup):
     pass
 
-BIG5_CHOICES = [[1,"Disagree strongly"], [2,"Disagree a little"], [3,"Neither agree nor Disagree"], [4,"Agree a little"], [5,"Agree strongly"]]
+BIG5_CHOICES_EN = [
+    [1, "Disagree strongly"],
+    [2, "Disagree a little"],
+    [3, "Neither agree nor Disagree"],
+    [4, "Agree a little"],
+    [5, "Agree strongly"],
+]
+BIG5_CHOICES_DE = [
+    [1, "trifft überhaupt nicht zu"],
+    [2, "trifft eher nicht zu"],
+    [3, "weder noch"],
+    [4, "trifft eher zu"],
+    [5, "trifft voll und ganz zu"],
+]
+BIG5_CHOICES = BIG5_CHOICES_DE if LANG == 'de' else BIG5_CHOICES_EN
+
 ERQ_CHOICES = [
     [1, "Strongly disagree"],
     [2, "Disagree"],
@@ -66,6 +99,10 @@ ERQ_CHOICES = [
     [6, "Agree"],
     [7, "Strongly agree"],
 ]
+
+PRIVACY_AGREEMENT_LABEL_EN = "To continue please first accept our survey privacy policy."
+PRIVACY_AGREEMENT_LABEL_DE = "Um fortzufahren, akzeptieren Sie bitte zuerst unsere Datenschutzerklärung zur Studie."
+PRIVACY_AGREEMENT_LABEL = PRIVACY_AGREEMENT_LABEL_DE if LANG == 'de' else PRIVACY_AGREEMENT_LABEL_EN
 
 
 class Profile(BaseModel):
@@ -85,7 +122,7 @@ class Player(BasePlayer):
     calibration_audio     = models.StringField(initial='')   # saved baseline filename
 
     privacy_agreement = models.BooleanField(
-        label="To continue please first accept our survey privacy policy.",
+        label=PRIVACY_AGREEMENT_LABEL,
         widget=widgets.CheckboxInput,
         initial=False
     )

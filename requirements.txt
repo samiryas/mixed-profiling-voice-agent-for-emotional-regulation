@@ -117,8 +117,9 @@ wtforms-sqlalchemy==0.2
 # Runs locally so participant audio never leaves the machine.
 faster-whisper==1.2.1
 
-# T3 live adaptation (FR12/FR13/FR14): per-turn German sentiment + acoustic features.
-# Sentiment uses oliverguhr/german-sentiment-bert via transformers (local, GDPR).
+# T3 live adaptation (FR12/FR13/FR14): per-turn sentiment + acoustic features.
+# Sentiment (local, GDPR): de -> oliverguhr/german-sentiment-bert;
+# en -> cardiffnlp/twitter-roberta-base-sentiment-latest (via transformers).
 # librosa extracts pitch/speech-rate/pause-rate; WebM/Opus decoded via ffmpeg.
 torch>=2.0
 transformers>=4.40

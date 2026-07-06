@@ -1,0 +1,70 @@
+{% extends 'global/Page.html' %}
+
+{% block %}
+    <style>
+        .progress-bar {
+            width: 100%;
+        }
+    </style>
+{% endblock %}
+
+
+{% block title %}
+
+    <div class="d-flex justify-content-center">
+        <h2 style="margin-bottom:20px">Verarbeitung, bitte warten …</h2>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="explanation-container">
+        Dies kann bis zu 3 Minuten dauern.<br>
+        Bitte laden Sie die Seite nicht neu.
+    </div>
+    <div class="progress">
+        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"style="-webkit-animation: 1s linear infinite progress-bar-stripes !important;animation: 1s linear infinite progress-bar-stripes !important;"></div>
+    </div>
+{% endblock %}
+
+
+{% block scripts %}
+<script>
+const advanceKey = 'processing_advanced:' + window.location.pathname;
+let advanced = false;
+
+function advanceOnce() {
+    if (advanced || sessionStorage.getItem(advanceKey)) {
+        return;
+    }
+    const form = document.getElementById('form');
+    if (!form) {
+        console.error('oTree form not found');
+        return;
+    }
+    advanced = true;
+    sessionStorage.setItem(advanceKey, '1');
+    form.submit();
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+    {% if processing_complete %}
+    advanceOnce();
+    {% else %}
+    pollStatus();
+    {% endif %}
+});
+
+function pollStatus() {
+    liveSend({type: "status"});
+}
+
+function liveRecv(data) {
+    const status = data.status || data;
+    console.log("status:", status);
+    if (status === "done") {
+        advanceOnce();
+    }
+}
+</script>
+{% endblock %}
+

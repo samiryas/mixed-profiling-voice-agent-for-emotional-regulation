@@ -1,0 +1,33 @@
+{% extends 'global/Page.html' %}
+
+{% block title %}
+    <div class="d-flex justify-content-center">
+        <h2 style="margin-bottom:20px">Verfeinerung</h2>
+    </div>
+{% endblock %}
+
+{% block content %}
+    <div class="explanation-container">
+        Sie haben nun die Möglichkeit, die Texte für die sieben verschiedenen Dimensionen zu verfeinern oder zu optimieren. 
+        Gehen Sie jeden Text durch und passen Sie ihn direkt an, wenn Sie finden, dass etwas geändert werden sollte, damit das Profil Sie als Person besser beschreibt.
+    </div>
+    {{ for field in form }}
+        <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+            <h3>{{field.label}}</field></h3>
+            {{field}}
+        </div>
+    {{ endfor }}
+    <div style="text-align: right; margin-top: 20px;">
+        {{ next_button }}
+    </div>
+{% endblock %}
+
+{{ block scripts }}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const timestamp = Date.now() / 1000; 
+        console.log(timestamp)
+        liveSend({'timestamp_refinement': timestamp})
+    });
+</script>
+{{ endblock }}

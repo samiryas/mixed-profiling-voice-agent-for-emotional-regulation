@@ -4,6 +4,7 @@ import json
 import os
 import base64
 import logging
+import threading
 from datetime import datetime, timezone
 
 from .services import transcribe, generate_reply, synthesize
@@ -14,6 +15,7 @@ from .prompts import (
     is_last_phase,
     min_duration,
 )
+from settings import LANG
 
 doc = """
 Module 2 — Voice Session (scaffold).
@@ -149,6 +151,7 @@ def _save_audio(filename: str, audio: bytes) -> str:
 
 class Session(Page):
     form_model = 'player'
+    template_name = f'Voice/{LANG}/Session.html'
 
     @staticmethod
     def js_vars(player):
@@ -205,7 +208,10 @@ class Session(Page):
                 text = await transcribe(b64)
             except Exception as e:
                 logger.exception('STT failed')
-                yield {player.id_in_group: {'error': f'Transcription failed: {e}'}}
+                yield {player.id_in_group: {'error': (
+                    f'Transkription fehlgeschlagen: {e}' if LANG == 'de'
+                    else f'Transcription failed: {e}'
+                )}}
                 return
 
             MessageData.create(
@@ -328,7 +334,10 @@ class Session(Page):
                 reply = await generate_reply(messages, system_prompt=system_prompt)
             except Exception as e:
                 logger.exception('LLM failed')
-                yield {player.id_in_group: {'error': f'LLM failed: {e}'}}
+                yield {player.id_in_group: {'error': (
+                    f'KI-Antwort fehlgeschlagen: {e}' if LANG == 'de'
+                    else f'LLM failed: {e}'
+                )}}
                 return
 
             # strip the readiness flag before the text reaches TTS or the transcript (D18/FR22)
@@ -385,3 +394,10 @@ class Session(Page):
 
 
 page_sequence = [Session]
+
+# Best-effort head start: load STT / sentiment / librosa JIT in the background so
+# the first Voice turn is fast. Introduction Processing gates on is_warm() for
+# the real guarantee.
+from .warmup import warmup  # noqa: E402
+
+threading.Thread(target=warmup, daemon=True, name='voice-warmup').start()

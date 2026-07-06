@@ -1,7 +1,8 @@
-"""German per-turn sentiment analysis and 3-state classifier (FR12/FR13/FR14).
+"""Per-turn sentiment analysis and 3-state classifier (FR12/FR13/FR14).
 
 Runs server-side, per speaking turn, for condition T3 only. The sentiment model
-(`oliverguhr/german-sentiment-bert`) is loaded once as a lazy module-level singleton.
+is selected from a per-language registry and loaded once as a lazy module-level
+singleton.
 
 Uses the transformers API directly (germansentiment 1.1.0 is incompatible with
 transformers >= 5, which removed `batch_encode_plus`).
@@ -9,6 +10,8 @@ transformers >= 5, which removed `batch_encode_plus`).
 import logging
 import os
 import re
+
+from settings import LANG
 
 logger = logging.getLogger(__name__)
 
@@ -65,15 +68,49 @@ class _GermanSentimentModel:
         return {"label": label, "score": score}
 
 
+class _EnglishSentimentModel:
+    """cardiffnlp/twitter-roberta-base-sentiment-latest — 3-class negative/neutral/positive."""
+
+    def __init__(self):
+        import torch
+        from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+        model_name = "cardiffnlp/twitter-roberta-base-sentiment-latest"
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.model = AutoModelForSequenceClassification.from_pretrained(model_name)
+        self.model = self.model.to(self.device)
+        self.tokenizer = AutoTokenizer.from_pretrained(model_name)
+        self._torch = torch
+
+    def predict(self, text: str) -> dict:
+        encoded = self.tokenizer(
+            text.strip(), padding=True, truncation=True, return_tensors="pt",
+        )
+        encoded = {k: v.to(self.device) for k, v in encoded.items()}
+        with self._torch.no_grad():
+            logits = self.model(**encoded).logits
+        probs = self._torch.softmax(logits, dim=-1)[0].tolist()
+        label_id = int(logits.argmax(dim=-1).item())
+        label = self.model.config.id2label[label_id].lower()
+        score = float(probs[label_id])
+        return {"label": label, "score": score}
+
+
+def _model_class():
+    if LANG == "de":
+        return _GermanSentimentModel
+    return _EnglishSentimentModel
+
+
 def _get_model():
     global _model
     if _model is None:
-        _model = _GermanSentimentModel()
+        _model = _model_class()()
     return _model
 
 
 def analyse_sentiment(text: str) -> dict:
-    """Classify the sentiment of a German utterance.
+    """Classify the sentiment of an utterance.
 
     Returns {"label": "positive"|"negative"|"neutral", "score": float} where score
     is the probability of the predicted label. Empty/blank text is treated as

@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import json
 import logging
@@ -6,7 +7,9 @@ import random
 import threading
 from otree.api import Currency as c, currency_range
 
+from settings import LANG
 from utils.ai import runGPT, runGPTModel
+from utils.live_prompts import live_prompt
 from utils.promting import renderPrompt
 from . import models
 
@@ -34,6 +37,7 @@ class Introduction(Page):
 
 class BigFive(Page):
     form_model = 'player'
+    template_name = f'Introduction/{LANG}/BigFive.html'
 
     def get_form_fields(self):
         order = self.participant.vars.get('big5_order')
@@ -49,6 +53,8 @@ class BigFive(Page):
 
 
 class BigFiveT1(BigFive):
+    template_name = f'Introduction/{LANG}/BigFiveT1.html'
+
     def is_displayed(self):
         if self.player.field_maybe_none('treatment_questionnaire') is None:
             number = random.choice([1, 2])
@@ -56,6 +62,8 @@ class BigFiveT1(BigFive):
         return self.player.treatment_questionnaire == 1
 
 class BigFiveT2(BigFive):
+    template_name = f'Introduction/{LANG}/BigFiveT2.html'
+
     def is_displayed(self):
         if self.player.field_maybe_none('treatment_questionnaire') is None:
             number = random.choice([1, 2])
@@ -64,6 +72,7 @@ class BigFiveT2(BigFive):
     
 class ERQ(Page):
     form_model = 'player'
+    template_name = f'Introduction/{LANG}/ERQ.html'
 
     def get_form_fields(self):
         order = self.participant.vars.get('erq_order')
@@ -80,6 +89,7 @@ class ERQ(Page):
 class Privacy(Page):
     form_model = 'player'
     form_fields = ['privacy_agreement']
+    template_name = f'Introduction/{LANG}/Privacy.html'
 
     #def before_next_page(self):
     #    self.player.
@@ -96,6 +106,7 @@ CALIBRATION_DIR = '_static/Voice/recordings'
 
 class Calibration(Page):
     form_model = 'player'
+    template_name = f'Introduction/{LANG}/Calibration.html'
 
     @staticmethod
     def live_method(player, data):
@@ -127,6 +138,7 @@ class Calibration(Page):
 
 class Processing(Page):
     form_model = 'player'
+    template_name = f'Introduction/{LANG}/Processing.html'
 
     def vars_for_template(self):
         processing_complete = (
@@ -145,47 +157,62 @@ class Processing(Page):
             )
 
     @staticmethod
+    async def _ensure_voice_models_warm():
+        from Voice.warmup import is_warm, warmup
+
+        if not is_warm():
+            await asyncio.to_thread(warmup)
+
+    @staticmethod
+    async def _run_questionnaire_profiling(player: Player):
+        logging.info("Starting Profiling")
+        values = {
+            **{
+                attr.key: dict(BIG5_CHOICES).get(getattr(player, attr.key))
+                for attr in inspect(Player).attrs
+                if attr.key in [key for key, _ in BIG5_FIELDS]
+            },
+            **{
+                attr.key: dict(ERQ_CHOICES).get(getattr(player, attr.key))
+                for attr in inspect(Player).attrs
+                if attr.key in [key for key, _ in ERQ_FIELDS]
+            }
+        }
+        prompt_data = {
+            'big5_fields': BIG5_FIELDS,
+            'erq_fields': ERQ_FIELDS,
+            'data': values,
+            'response_model': Profile.model_json_schema()
+        }
+        messages = [{'role': 'user', 'content': renderPrompt(f'Introduction/templates/Prompts/{LANG}/Profiling.txt', prompt_data)}]
+        profile = await runGPT(messages)
+        logging.info("Profile text generated")
+        messages.append({'role':'assistant', 'content': profile})
+        messages.append({'role':'user','content': renderPrompt(f'Introduction/templates/Prompts/{LANG}/Modelling.txt', prompt_data)})
+        profile = await runGPTModel(messages, Profile)
+        logging.info("Profile modeled")
+        prompt_data["profile_questionnaire"] = profile
+        cachedMessages = [
+            {'role': 'system', 'content': renderPrompt(f'Chat/templates/Prompts/{LANG}/System.txt', prompt_data)},
+        ]
+        messages_interview = cachedMessages.copy()
+        messages_interview.append(
+            {'role': 'user', 'content': live_prompt('first_question')}
+        )
+        question_1 = await runGPT(messages_interview)
+        logging.info("Generated Question")
+        cachedMessages.append({'role':'assistant', 'content': question_1})
+        return messages, cachedMessages, profile
+
+    @staticmethod
     async def live_method(player: Player, data):
         msg_type = data.get("type")
         if msg_type == "status" and player.profile_questionnaire == '':
             yield {player.id_in_group: 'running' }
-            logging.info("Starting Profiling")
-            values = {
-                **{
-                    attr.key: dict(BIG5_CHOICES).get(getattr(player, attr.key))
-                    for attr in inspect(Player).attrs
-                    if attr.key in [key for key, _ in BIG5_FIELDS]
-                },
-                **{
-                    attr.key: dict(ERQ_CHOICES).get(getattr(player, attr.key))
-                    for attr in inspect(Player).attrs
-                    if attr.key in [key for key, _ in ERQ_FIELDS]
-                }
-            }
-            data = {
-                'big5_fields': BIG5_FIELDS,
-                'erq_fields': ERQ_FIELDS,
-                'data': values,
-                'response_model': Profile.model_json_schema()
-            }
-            messages = [{'role': 'user', 'content': renderPrompt('Introduction/templates/Prompts/Profiling.txt', data)}]
-            profile = await runGPT(messages)
-            logging.info("Profile text generated")
-            messages.append({'role':'assistant', 'content': profile})
-            messages.append({'role':'user','content': renderPrompt('Introduction/templates/Prompts/Modelling.txt', data)})
-            profile = await runGPTModel(messages, Profile)
-            logging.info("Profile modeled")
-            data["profile_questionnaire"] = profile
-            cachedMessages = [
-                {'role': 'system', 'content': renderPrompt('Chat/templates/Prompts/System.txt', data)},
-            ]
-            messages_interview = cachedMessages.copy()
-            messages_interview.append(
-                {'role': 'user', 'content': 'Please ask your first question?'}
+            (messages, cachedMessages, profile), _ = await asyncio.gather(
+                Processing._run_questionnaire_profiling(player),
+                Processing._ensure_voice_models_warm(),
             )
-            question_1 = await runGPT(messages_interview)
-            logging.info("Generated Question")
-            cachedMessages.append({'role':'assistant', 'content': question_1})
             # All awaits are finished here, safe to write profiling info into player data.
             player.profilingMessages_questionnaire = json.dumps(messages)
             player.cachedMessages_questionnaire = json.dumps(cachedMessages)

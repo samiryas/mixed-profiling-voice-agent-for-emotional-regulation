@@ -1,7 +1,7 @@
 {% extends 'global/Page.html' %}
 
 {% block title %}
-    Voice calibration
+    Sprachkalibrierung
 {% endblock %}
 
 {% block app_styles %}
@@ -28,11 +28,12 @@
 
 {% block content %}
 <div class="container card calib-card mb-3 p-4">
-    <h3>Voice calibration</h3>
+    <h3>Sprachkalibrierung</h3>
     <p>
-        Before the questionnaires, we need a short sample of your normal speaking voice. This is used
-        only to calibrate the voice analysis later in the study. Please read the passage below aloud at
-        a natural, relaxed pace. Recording stops automatically after 30 seconds.
+        Vor den Fragebögen benötigen wir eine kurze Probe Ihrer normalen Sprechstimme. Diese wird
+        ausschließlich zur Kalibrierung der Sprachanalyse später in der Studie verwendet. Bitte lesen
+        Sie den folgenden Text in natürlichem, entspanntem Tempo laut vor. Die Aufnahme stoppt
+        automatisch nach 30 Sekunden.
     </p>
 
     <div class="calib-passage" id="calibPassage">
@@ -53,14 +54,14 @@
             <line x1="12" y1="19" x2="12" y2="23"></line>
             <line x1="8" y1="23" x2="16" y2="23"></line>
         </svg>
-        <button type="button" class="btn btn-primary" id="startBtn" disabled>Start recording</button>
-        <button type="button" class="btn btn-outline-secondary" id="stopBtn" style="display:none;">Stop</button>
-        <button type="button" class="btn btn-outline-secondary" id="redoBtn" style="display:none;">Record again</button>
+        <button type="button" class="btn btn-primary" id="startBtn" disabled>Aufnahme starten</button>
+        <button type="button" class="btn btn-outline-secondary" id="stopBtn" style="display:none;">Stopp</button>
+        <button type="button" class="btn btn-outline-secondary" id="redoBtn" style="display:none;">Erneut aufnehmen</button>
     </div>
 
     <div class="calib-progress-track"><div class="calib-progress-bar" id="progressBar"></div></div>
-    <div class="calib-status" id="status">Requesting microphone access…</div>
-    <div class="calib-hint">Please record at least 10 seconds so the calibration is reliable.</div>
+    <div class="calib-status" id="status">Mikrofonzugriff wird angefordert…</div>
+    <div class="calib-hint">Bitte nehmen Sie mindestens 10 Sekunden auf, damit die Kalibrierung zuverlässig ist.</div>
 
     <div id="nextWrap" style="display:none; text-align:right; margin-top:20px;">
         {{ next_button }}
@@ -101,12 +102,12 @@
                 mediaRecorder.addEventListener('dataavailable', e => audioChunks.push(e.data));
                 mediaRecorder.addEventListener('stop', onRecordingStopped);
                 startBtn.disabled = false;
-                statusEl.textContent = 'Ready. Click “Start recording” and read the passage aloud.';
+                statusEl.textContent = 'Bereit. Klicken Sie auf „Aufnahme starten“ und lesen Sie den Text laut vor.';
             })
             .catch(err => {
                 console.error('getUserMedia error:', err);
-                statusEl.innerHTML = '<span class="calib-err">Microphone access is required to continue. '
-                    + 'Please allow it and reload the page.</span>';
+                statusEl.innerHTML = '<span class="calib-err">Mikrofonzugriff ist erforderlich, um fortzufahren. '
+                    + 'Bitte erlauben Sie den Zugriff und laden Sie die Seite neu.</span>';
             });
     });
 
@@ -119,7 +120,7 @@
         redoBtn.style.display = 'none';
         stopBtn.style.display = 'inline-block';
         nextWrap.style.display = 'none';
-        statusEl.textContent = 'Recording… read the passage aloud.';
+        statusEl.textContent = 'Aufnahme läuft … bitte lesen Sie den Text laut vor.';
         tick();
     }
 
@@ -129,7 +130,7 @@
             const pct = Math.min(100, (elapsed / RECORD_SECONDS) * 100);
             progressBar.style.width = pct + '%';
             const remaining = Math.max(0, Math.ceil(RECORD_SECONDS - elapsed));
-            statusEl.textContent = 'Recording… ' + remaining + 's remaining.';
+            statusEl.textContent = 'Aufnahme läuft … noch ' + remaining + ' s.';
             if (elapsed >= RECORD_SECONDS) stopRecording();
         }, 200);
     }
@@ -145,8 +146,8 @@
         const elapsed = (Date.now() - startedAt) / 1000;
         if (elapsed < MIN_SECONDS) {
             progressBar.style.width = '0%';
-            statusEl.innerHTML = '<span class="calib-err">That was a bit short ('
-                + Math.floor(elapsed) + 's). Please record at least ' + MIN_SECONDS + ' seconds.</span>';
+            statusEl.innerHTML = '<span class="calib-err">Das war etwas zu kurz ('
+                + Math.floor(elapsed) + ' s). Bitte nehmen Sie mindestens ' + MIN_SECONDS + ' Sekunden auf.</span>';
             redoBtn.style.display = 'inline-block';
             startBtn.style.display = 'none';
             return;
@@ -155,7 +156,7 @@
         const reader = new FileReader();
         reader.onloadend = () => {
             const base64 = reader.result.split(',')[1];
-            statusEl.textContent = 'Saving calibration…';
+            statusEl.textContent = 'Kalibrierung wird gespeichert …';
             liveSend({ 'event': 'calibration', 'audio': base64 });
         };
         reader.readAsDataURL(blob);
@@ -168,7 +169,7 @@
     function liveRecv(data) {
         if (data && data.event === 'saved') {
             progressBar.style.width = '100%';
-            statusEl.innerHTML = '<span class="calib-ok">Calibration saved. You can continue.</span>';
+            statusEl.innerHTML = '<span class="calib-ok">Kalibrierung gespeichert. Sie können fortfahren.</span>';
             nextWrap.style.display = 'block';
             redoBtn.style.display = 'inline-block';
             startBtn.style.display = 'none';

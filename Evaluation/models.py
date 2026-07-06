@@ -2,9 +2,21 @@ from otree.api import (
     models, widgets, BaseConstants, BaseSubsession, BaseGroup, BasePlayer,
 )
 
+from settings import LANG
+
 doc = """
     Evaluating the profiles
 """
+
+REFINEMENT_LABELS = {
+    'extraversion': 'Extraversion',
+    'agreeableness': 'Verträglichkeit' if LANG == 'de' else 'Agreeableness',
+    'conscientiousness': 'Gewissenhaftigkeit' if LANG == 'de' else 'Conscientiousness',
+    'neuroticism': 'Neurotizismus' if LANG == 'de' else 'Neuroticism',
+    'openness': 'Offenheit' if LANG == 'de' else 'Openness',
+    'reappraisal': 'Neubewertung' if LANG == 'de' else 'Reappraisal',
+    'suppression': 'Unterdrückung' if LANG == 'de' else 'Suppression',
+}
 
 
 TRAITS = [
@@ -114,13 +126,13 @@ class Player(BasePlayer):
     questionnaire_suppression_trustworthy = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
     questionnaire_suppression_accurate    = models.IntegerField(choices=SEVEN_LIKERT_SCALE, widget=widgets.RadioSelect)
 
-    refinement_extraversion = models.LongStringField(label="Extraversion")
-    refinement_agreeableness = models.LongStringField(label="Agreeableness")
-    refinement_conscientiousness = models.LongStringField(label="Conscientiousness")
-    refinement_neuroticism = models.LongStringField(label="Neuroticism")
-    refinement_openness = models.LongStringField(label="Openness")
-    refinement_reappraisal = models.LongStringField(label="Reappraisal")
-    refinement_suppression = models.LongStringField(label="Suppression")
+    refinement_extraversion = models.LongStringField(label=REFINEMENT_LABELS['extraversion'])
+    refinement_agreeableness = models.LongStringField(label=REFINEMENT_LABELS['agreeableness'])
+    refinement_conscientiousness = models.LongStringField(label=REFINEMENT_LABELS['conscientiousness'])
+    refinement_neuroticism = models.LongStringField(label=REFINEMENT_LABELS['neuroticism'])
+    refinement_openness = models.LongStringField(label=REFINEMENT_LABELS['openness'])
+    refinement_reappraisal = models.LongStringField(label=REFINEMENT_LABELS['reappraisal'])
+    refinement_suppression = models.LongStringField(label=REFINEMENT_LABELS['suppression'])
     treatment_evaluation  = models.IntegerField(choices=[1,2])
 
 

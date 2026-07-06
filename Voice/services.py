@@ -17,6 +17,8 @@ import asyncio
 import logging
 from os import environ
 
+from settings import LANG
+
 logger = logging.getLogger(__name__)
 
 STT_BACKEND = environ.get('VOICE_STT_BACKEND', 'stub')
@@ -37,18 +39,25 @@ async def transcribe(audio_bytes: bytes) -> str:
 _WHISPER_MODEL = None
 
 
+def _get_whisper_model():
+    """Lazy singleton for faster-whisper (shared by STT and warm-up)."""
+    global _WHISPER_MODEL
+    if _WHISPER_MODEL is None:
+        from faster_whisper import WhisperModel
+        _WHISPER_MODEL = WhisperModel(
+            environ.get('WHISPER_MODEL', 'base'), device='cpu', compute_type='int8',
+        )
+    return _WHISPER_MODEL
+
+
 async def _transcribe_faster_whisper(audio_bytes: bytes) -> str:
     """Target STT (design D14): faster-whisper, runs locally so audio never
     leaves the lab. Requires `faster-whisper` to be installed."""
     def _run():
-        global _WHISPER_MODEL
         import io
-        from faster_whisper import WhisperModel
-        if _WHISPER_MODEL is None:
-            _WHISPER_MODEL = WhisperModel(
-                environ.get('WHISPER_MODEL', 'base'), device='cpu', compute_type='int8',
-            )
-        segments, _ = _WHISPER_MODEL.transcribe(io.BytesIO(audio_bytes))
+        segments, _ = _get_whisper_model().transcribe(
+            io.BytesIO(audio_bytes), language=LANG,
+        )
         return ' '.join(s.text for s in segments).strip()
 
     return await asyncio.to_thread(_run)
