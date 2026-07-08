@@ -24,10 +24,10 @@ class HRVVisualizationRunner:
 
 
 if __name__ == "__main__":
-    runner = HRVVisualizationRunner(csv_file="messung_proband1.csv")
+    runner = HRVVisualizationRunner(csv_file="participant_1_hrv_raw.csv")
     runner.run_rolling_visualization(
-        start_time="19:40:39",
-        end_time="19:42:39",
+        start_time="00:16:06.104",
+        end_time="00:23:43.799",
         window_minutes=1,
-        step_seconds=20
+        step_seconds=30
     )
