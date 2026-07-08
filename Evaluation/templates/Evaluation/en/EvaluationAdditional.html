@@ -1,0 +1,99 @@
+{% extends 'global/Page.html' %}
+
+{% block title %}
+    Post-Study Questionnaire
+{% endblock %}
+
+{% block content %}
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Personalization</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Statements</th>
+                <th style="width: 7.85%">1<br>Not at all true</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Completely true</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>I felt that the AI coach's guidance was tailored specifically to me and my situation.</td>
+                {% for choice in form.pers_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The AI coach seemed to know and take into account my personal characteristics.</td>
+                {% for choice in form.pers_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The session felt generic rather than personal.</td>
+                {% for choice in form.pers_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Perceived AI hallucination</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Statements</th>
+                <th style="width: 7.85%">1<br>Strongly disagree</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Strongly agree</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>The AI coach referred to personal details that I had not shared during the session.</td>
+                {% for choice in form.hall_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The AI coach presented guesses about me as if they were facts.</td>
+                {% for choice in form.hall_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The AI coach introduced information about my situation that did not come from me.</td>
+                {% for choice in form.hall_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The AI coach seemed to remember or use details that were not actually part of our conversation.</td>
+                {% for choice in form.hall_4 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Open feedback</h3>
+    <p>{{ form.open_feedback_1.label }}</p>
+    {{ form.open_feedback_1 }}
+    </div>
+
+    <div style="text-align: right; margin-top: 20px;">
+        {{ next_button }}
+    </div>
+{% endblock %}

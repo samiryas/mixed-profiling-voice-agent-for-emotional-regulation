@@ -102,12 +102,6 @@ UEQ_QUALITY_FIELDS_EN = [
 UEQ_QUALITY_FIELDS = UEQ_QUALITY_FIELDS_DE if LANG == 'de' else UEQ_QUALITY_FIELDS_EN
 
 # --- UEQ+ — Usefulness ------------------------------------------------------
-# STATUS (questionnaire_spec.json): "under_discussion" — awaiting supervisor
-# decision on whether to keep both items, keep one, or drop this dimension
-# entirely. Built here so it's ready either way, but treat as PENDING SIGN-OFF.
-# Items 3 & 4 ("not helpful"/"not beneficial") are marked "exclude" in the spec
-# as near-duplicates of items 1 & 2 and are intentionally omitted below.
-# ---------------------------------------------------------------------------
 UEQ_USEFUL_INTRO_DE = "Ich betrachte die Möglichkeit, das Produkt zu nutzen, als …"
 UEQ_USEFUL_INTRO_EN = "I consider the possibility of using the product as …"
 UEQ_USEFUL_INTRO = UEQ_USEFUL_INTRO_DE if LANG == 'de' else UEQ_USEFUL_INTRO_EN
@@ -115,10 +109,14 @@ UEQ_USEFUL_INTRO = UEQ_USEFUL_INTRO_DE if LANG == 'de' else UEQ_USEFUL_INTRO_EN
 UEQ_USEFUL_FIELDS_DE = [
     ('ueq_useful_1', "nutzlos", "nützlich"),
     ('ueq_useful_2', "nicht lohnend", "lohnend"),
+    ('ueq_useful_3', "nicht hilfreich", "hilfreich"),
+    ('ueq_useful_4', "nicht vorteilhaft", "vorteilhaft"),
 ]
 UEQ_USEFUL_FIELDS_EN = [
     ('ueq_useful_1', "useless", "useful"),
     ('ueq_useful_2', "not rewarding", "rewarding"),
+    ('ueq_useful_3', "not helpful", "helpful"),
+    ('ueq_useful_4', "not beneficial", "beneficial"),
 ]
 UEQ_USEFUL_FIELDS = UEQ_USEFUL_FIELDS_DE if LANG == 'de' else UEQ_USEFUL_FIELDS_EN
 
@@ -199,18 +197,24 @@ class Constants(BaseConstants):
     personalization_labels = dict(PERSONALIZATION_FIELDS)
     hallucination_labels = dict(HALLUCINATION_FIELDS)
 
-    # Preserves questionnaire_spec.json dimension/item order for pages/exports.
-    form_fields = (
+    wai_form_fields = (
         [name for name, _ in WAI_GOAL_FIELDS]
         + [name for name, _ in WAI_TASK_FIELDS]
         + [name for name, _ in WAI_BOND_FIELDS]
-        + [name for name, _, _ in UEQ_BEHAVIOR_FIELDS]
+    )
+    ueq_form_fields = (
+        [name for name, _, _ in UEQ_BEHAVIOR_FIELDS]
         + [name for name, _, _ in UEQ_QUALITY_FIELDS]
         + [name for name, _, _ in UEQ_USEFUL_FIELDS]
-        + [name for name, _ in PERSONALIZATION_FIELDS]
+    )
+    additional_form_fields = (
+        [name for name, _ in PERSONALIZATION_FIELDS]
         + [name for name, _ in HALLUCINATION_FIELDS]
         + ['open_feedback_1']
     )
+
+    # Preserves questionnaire dimension/item order for exports.
+    form_fields = wai_form_fields + ueq_form_fields + additional_form_fields
 
 
 class Subsession(BaseSubsession):
@@ -255,9 +259,11 @@ class Player(BasePlayer):
     ueq_quality_3 = models.IntegerField(choices=SEMANTIC_DIFFERENTIAL_SCALE, label="nicht hilfreich – hilfreich", widget=widgets.RadioSelect)
     ueq_quality_4 = models.IntegerField(choices=SEMANTIC_DIFFERENTIAL_SCALE, label="unintelligent – intelligent", widget=widgets.RadioSelect)
 
-    # --- UEQ+ — Usefulness (semantic differential) — status: under_discussion, pending sign-off ---
+    # --- UEQ+ — Usefulness (semantic differential) ---
     ueq_useful_1 = models.IntegerField(choices=SEMANTIC_DIFFERENTIAL_SCALE, label="nutzlos – nützlich", widget=widgets.RadioSelect)
     ueq_useful_2 = models.IntegerField(choices=SEMANTIC_DIFFERENTIAL_SCALE, label="nicht lohnend – lohnend", widget=widgets.RadioSelect)
+    ueq_useful_3 = models.IntegerField(choices=SEMANTIC_DIFFERENTIAL_SCALE, label="nicht hilfreich – hilfreich", widget=widgets.RadioSelect)
+    ueq_useful_4 = models.IntegerField(choices=SEMANTIC_DIFFERENTIAL_SCALE, label="nicht vorteilhaft – vorteilhaft", widget=widgets.RadioSelect)
 
     # --- Personalization (manipulation check) ---
     pers_1 = models.IntegerField(choices=PERSONALIZATION_CHOICES, label=Constants.personalization_labels['pers_1'], widget=widgets.RadioSelect)
