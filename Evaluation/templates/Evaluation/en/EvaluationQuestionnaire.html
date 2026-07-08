@@ -1,464 +1,358 @@
 {% extends 'global/Page.html' %}
 
 {% block title %}
-    Profile Evaluation
+    Post-Study Questionnaire
 {% endblock %}
 
 {% block content %}
     <div class="explanation-container">
-        We have created <b>two different profiles</b> for you on two separate pages. 
-        Please rate both of them. <b>You cannot go back after rating the profile.</b>
-    </div>
-
-    <div class="explanation-container">
-        Below you will find an overview of the different dimensions of your personal user profile. For each dimension, you will first see an explanation followed by your own personal profile text.
-        Please answer the following questions and rate the statements.
-        There are no right or wrong answers in this experiment.
-        We are only interested in <b>your personal opinion.</b>
+        The session with the AI coach is now complete. Please answer the
+        following questions about your experience.
+        There are no right or wrong answers &mdash; we are only interested in
+        <b>your personal opinion.</b>
     </div>
 
     <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
-    <h3>Extraversion</h3>
-    <p><b>Explanation:</b> This dimension reflects how outgoing, energetic, and sociable you are in interactions with others.</p>
-    <p><b>Your Profile:</b> {{ extraversion }}</p>
+    <h3>Goal of the session</h3>
     <table class="table">
         <thead>
             <tr>
                 <th style="width: 45%">Statements</th>
-                <th style="width: 11%"></th>
-                <th style="width: 4%">1</th>
-                <th style="width: 4%">2</th>
-                <th style="width: 4%">3</th>
-                <th style="width: 4%">4</th>
-                <th style="width: 4%">5</th>
-                <th style="width: 4%">6</th>
-                <th style="width: 4%">7</th>
-                <th style="width: 11%"></th>
+                <th style="width: 7.85%">1<br>Never</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Always</th>
             </tr>
         </thead>
         <tbody>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>useless</td>
-                    {% for choice in form.questionnaire_extraversion_useful %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>useful</td>
-                </tr>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>implausible</td>
-                    {% for choice in form.questionnaire_extraversion_plausible %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>plausible</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>untrustworthy</td>
-                    {% for choice in form.questionnaire_extraversion_trustworthy %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>trustworthy</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>inaccurate</td>
-                    {% for choice in form.questionnaire_extraversion_accurate %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>accurate </td>
-                </tr>
+            <tr>
+                <td>The AI coach and I had a shared understanding of the goal of the session.</td>
+                {% for choice in form.wai_goal_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The AI coach focused on what was important for me to work on.</td>
+                {% for choice in form.wai_goal_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The session helped clarify what kind of emotional change would be helpful for me.</td>
+                {% for choice in form.wai_goal_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
         </tbody>
     </table>
     </div>
+
     <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
-    <h3>Agreeableness</h3>
-    <p><b>Explanation:</b> This dimension reflects how compassionate, cooperative, and considerate you are toward other people.</p>
-    <p><b>Your Profile:</b> {{ agreeableness }}</p>
+    <h3>Approach taken in the session</h3>
     <table class="table">
         <thead>
             <tr>
                 <th style="width: 45%">Statements</th>
-                <th style="width: 11%"></th>
-                <th style="width: 4%">1</th>
-                <th style="width: 4%">2</th>
-                <th style="width: 4%">3</th>
-                <th style="width: 4%">4</th>
-                <th style="width: 4%">5</th>
-                <th style="width: 4%">6</th>
-                <th style="width: 4%">7</th>
-                <th style="width: 11%"></th>
+                <th style="width: 7.85%">1<br>Never</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Always</th>
             </tr>
         </thead>
         <tbody>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>useless</td>
-                    {% for choice in form.questionnaire_agreeableness_useful %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>useful</td>
-                </tr>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>implausible</td>
-                    {% for choice in form.questionnaire_agreeableness_plausible %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>plausible</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>untrustworthy</td>
-                    {% for choice in form.questionnaire_agreeableness_trustworthy %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>trustworthy</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>inaccurate</td>
-                    {% for choice in form.questionnaire_agreeableness_accurate %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>accurate </td>
-                </tr>
+            <tr>
+                <td>The steps suggested by the AI coach seemed appropriate for improving my emotional situation.</td>
+                {% for choice in form.wai_task_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>I felt confident about the usefulness of the activities in the session.</td>
+                {% for choice in form.wai_task_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>As a result of the session, I am clearer about how I might regulate my emotions.</td>
+                {% for choice in form.wai_task_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
         </tbody>
     </table>
     </div>
+
     <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
-    <h3>Conscientiousness</h3>
-    <p><b>Explanation:</b> This dimension reflects how organized, reliable, and goal‑oriented you are in daily life.</p>
-    <p><b>Your Profile:</b> {{ conscientiousness }}</p>
+    <h3>Relationship with the AI coach</h3>
     <table class="table">
         <thead>
             <tr>
                 <th style="width: 45%">Statements</th>
-                <th style="width: 11%"></th>
-                <th style="width: 4%">1</th>
-                <th style="width: 4%">2</th>
-                <th style="width: 4%">3</th>
-                <th style="width: 4%">4</th>
-                <th style="width: 4%">5</th>
-                <th style="width: 4%">6</th>
-                <th style="width: 4%">7</th>
-                <th style="width: 11%"></th>
+                <th style="width: 7.85%">1<br>Never</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Always</th>
             </tr>
         </thead>
         <tbody>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>useless</td>
-                    {% for choice in form.questionnaire_conscientiousness_useful %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>useful</td>
-                </tr>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>implausible</td>
-                    {% for choice in form.questionnaire_conscientiousness_plausible %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>plausible</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>untrustworthy</td>
-                    {% for choice in form.questionnaire_conscientiousness_trustworthy %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>trustworthy</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>inaccurate</td>
-                    {% for choice in form.questionnaire_conscientiousness_accurate %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>accurate </td>
-                </tr>
+            <tr>
+                <td>I felt that the AI coach understood what I was trying to express.</td>
+                {% for choice in form.wai_bond_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The interaction with the AI coach felt respectful.</td>
+                {% for choice in form.wai_bond_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>I felt comfortable relying on the AI coach's guidance during the session.</td>
+                {% for choice in form.wai_bond_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
         </tbody>
     </table>
     </div>
+
     <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
-    <h3>Neuroticism</h3>
-    <p><b>Explanation:</b> This dimension reflects how strongly and how often you experience negative emotions such as worry,</p>
-    <p><b>Your Profile:</b> {{ neuroticism }}</p>
+    <h3>Response behaviour of the voice assistant</h3>
+    <p>In my opinion the response behaviour of the voice assistant is …</p>
     <table class="table">
         <thead>
             <tr>
-                <th style="width: 45%">Statements</th>
-                <th style="width: 11%"></th>
-                <th style="width: 4%">1</th>
-                <th style="width: 4%">2</th>
-                <th style="width: 4%">3</th>
-                <th style="width: 4%">4</th>
-                <th style="width: 4%">5</th>
-                <th style="width: 4%">6</th>
-                <th style="width: 4%">7</th>
-                <th style="width: 11%"></th>
+                <th style="width: 18%"></th>
+                <th style="width: 9%">1</th>
+                <th style="width: 9%">2</th>
+                <th style="width: 9%">3</th>
+                <th style="width: 9%">4</th>
+                <th style="width: 9%">5</th>
+                <th style="width: 9%">6</th>
+                <th style="width: 9%">7</th>
+                <th style="width: 18%"></th>
             </tr>
         </thead>
         <tbody>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>useless</td>
-                    {% for choice in form.questionnaire_neuroticism_useful %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>useful</td>
-                </tr>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>implausible</td>
-                    {% for choice in form.questionnaire_neuroticism_plausible %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>plausible</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>untrustworthy</td>
-                    {% for choice in form.questionnaire_neuroticism_trustworthy %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>trustworthy</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>inaccurate</td>
-                    {% for choice in form.questionnaire_neuroticism_accurate %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>accurate </td>
-                </tr>
+            <tr>
+                <td>artificial</td>
+                {% for choice in form.ueq_behavior_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>natural</td>
+            </tr>
+            <tr>
+                <td>unpleasant</td>
+                {% for choice in form.ueq_behavior_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>pleasant</td>
+            </tr>
+            <tr>
+                <td>unlikeable</td>
+                {% for choice in form.ueq_behavior_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>likeable</td>
+            </tr>
+            <tr>
+                <td>boring</td>
+                {% for choice in form.ueq_behavior_4 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>entertaining</td>
+            </tr>
         </tbody>
     </table>
     </div>
+
     <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
-    <h3>Openness</h3>
-    <p><b>Explanation:</b> This dimension reflects how curious, imaginative, and open to new ideas and experiences you are.</p>
-    <p><b>Your Profile:</b> {{ openness }}</p>
+    <h3>Response quality of the voice assistant</h3>
+    <p>The answers and responses given by the voice assistant are …</p>
     <table class="table">
         <thead>
             <tr>
-                <th style="width: 45%">Statements</th>
-                <th style="width: 11%"></th>
-                <th style="width: 4%">1</th>
-                <th style="width: 4%">2</th>
-                <th style="width: 4%">3</th>
-                <th style="width: 4%">4</th>
-                <th style="width: 4%">5</th>
-                <th style="width: 4%">6</th>
-                <th style="width: 4%">7</th>
-                <th style="width: 11%"></th>
+                <th style="width: 18%"></th>
+                <th style="width: 9%">1</th>
+                <th style="width: 9%">2</th>
+                <th style="width: 9%">3</th>
+                <th style="width: 9%">4</th>
+                <th style="width: 9%">5</th>
+                <th style="width: 9%">6</th>
+                <th style="width: 9%">7</th>
+                <th style="width: 18%"></th>
             </tr>
         </thead>
         <tbody>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>useless</td>
-                    {% for choice in form.questionnaire_openness_useful %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>useful</td>
-                </tr>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>implausible</td>
-                    {% for choice in form.questionnaire_openness_plausible %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>plausible</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>untrustworthy</td>
-                    {% for choice in form.questionnaire_openness_trustworthy %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>trustworthy</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>inaccurate</td>
-                    {% for choice in form.questionnaire_openness_accurate %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>accurate </td>
-                </tr>
+            <tr>
+                <td>inappropriate</td>
+                {% for choice in form.ueq_quality_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>suitable</td>
+            </tr>
+            <tr>
+                <td>useless</td>
+                {% for choice in form.ueq_quality_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>useful</td>
+            </tr>
+            <tr>
+                <td>not helpful</td>
+                {% for choice in form.ueq_quality_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>helpful</td>
+            </tr>
+            <tr>
+                <td>unintelligent</td>
+                {% for choice in form.ueq_quality_4 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>intelligent</td>
+            </tr>
         </tbody>
     </table>
     </div>
+
+    <!-- UEQ+ — Usefulness: status "under_discussion" in questionnaire_spec.json.
+         PENDING SIGN-OFF from supervisor on whether to keep both items, keep one,
+         or drop this dimension entirely. Do not remove/change without confirming. -->
     <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
-    <h3>Reappraisal</h3>
-    <p><b>Explanation:</b> This dimension reflects how much someone tries to change the way they think about a situation in order to change how they feel about it.</p>
-    <p><b>Your Profile:</b> {{ reappraisal }}</p>
+    <h3>Usefulness</h3>
+    <p>I consider the possibility of using the product as …</p>
     <table class="table">
         <thead>
             <tr>
-                <th style="width: 45%">Statements</th>
-                <th style="width: 11%"></th>
-                <th style="width: 4%">1</th>
-                <th style="width: 4%">2</th>
-                <th style="width: 4%">3</th>
-                <th style="width: 4%">4</th>
-                <th style="width: 4%">5</th>
-                <th style="width: 4%">6</th>
-                <th style="width: 4%">7</th>
-                <th style="width: 11%"></th>
+                <th style="width: 18%"></th>
+                <th style="width: 9%">1</th>
+                <th style="width: 9%">2</th>
+                <th style="width: 9%">3</th>
+                <th style="width: 9%">4</th>
+                <th style="width: 9%">5</th>
+                <th style="width: 9%">6</th>
+                <th style="width: 9%">7</th>
+                <th style="width: 18%"></th>
             </tr>
         </thead>
         <tbody>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>useless</td>
-                    {% for choice in form.questionnaire_reappraisal_useful %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>useful</td>
-                </tr>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>implausible</td>
-                    {% for choice in form.questionnaire_reappraisal_plausible %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>plausible</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>untrustworthy</td>
-                    {% for choice in form.questionnaire_reappraisal_trustworthy %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>trustworthy</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>inaccurate</td>
-                    {% for choice in form.questionnaire_reappraisal_accurate %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>accurate </td>
-                </tr>
+            <tr>
+                <td>useless</td>
+                {% for choice in form.ueq_useful_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>useful</td>
+            </tr>
+            <tr>
+                <td>not rewarding</td>
+                {% for choice in form.ueq_useful_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>rewarding</td>
+            </tr>
         </tbody>
     </table>
     </div>
+
     <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
-    <h3>Suppression</h3>
-    <p><b>Explanation:</b> This dimension reflects how much someone tries to hide or hold back their emotional expressions.</p>
-    <p><b>Your Profile:</b> {{ suppression }}</p>
+    <h3>Personalization</h3>
     <table class="table">
         <thead>
             <tr>
                 <th style="width: 45%">Statements</th>
-                <th style="width: 11%"></th>
-                <th style="width: 4%">1</th>
-                <th style="width: 4%">2</th>
-                <th style="width: 4%">3</th>
-                <th style="width: 4%">4</th>
-                <th style="width: 4%">5</th>
-                <th style="width: 4%">6</th>
-                <th style="width: 4%">7</th>
-                <th style="width: 11%"></th>
+                <th style="width: 7.85%">1<br>Not at all true</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Completely true</th>
             </tr>
         </thead>
         <tbody>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>useless</td>
-                    {% for choice in form.questionnaire_suppression_useful %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>useful</td>
-                </tr>
-                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>implausible</td>
-                    {% for choice in form.questionnaire_suppression_plausible %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>plausible</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>untrustworthy</td>
-                    {% for choice in form.questionnaire_suppression_trustworthy %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>trustworthy</td>
-                </tr>
-                                <tr>
-                    <td>In my opinion the information and data provided by the text are:</td>
-                    <td>inaccurate</td>
-                    {% for choice in form.questionnaire_suppression_accurate %}
-                        <td align="center">
-                            {{choice}}
-                        </td>
-                    {% endfor %}
-                    <td>accurate </td>
-                </tr>
+            <tr>
+                <td>I felt that the AI coach's guidance was tailored specifically to me and my situation.</td>
+                {% for choice in form.pers_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The AI coach seemed to know and take into account my personal characteristics.</td>
+                {% for choice in form.pers_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The session felt generic rather than personal.</td>
+                {% for choice in form.pers_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
         </tbody>
     </table>
     </div>
-  
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Perceived AI hallucination</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Statements</th>
+                <th style="width: 7.85%">1<br>Strongly disagree</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Strongly agree</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>The AI coach referred to personal details that I had not shared during the session.</td>
+                {% for choice in form.hall_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The AI coach presented guesses about me as if they were facts.</td>
+                {% for choice in form.hall_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The AI coach introduced information about my situation that did not come from me.</td>
+                {% for choice in form.hall_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The AI coach seemed to remember or use details that were not actually part of our conversation.</td>
+                {% for choice in form.hall_4 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Open feedback</h3>
+    <p>{{ form.open_feedback_1.label }}</p>
+    {{ form.open_feedback_1 }}
+    </div>
+
     <div style="text-align: right; margin-top: 20px;">
         {{ next_button }}
     </div>
