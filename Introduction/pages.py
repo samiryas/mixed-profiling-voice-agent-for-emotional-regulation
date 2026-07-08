@@ -7,7 +7,7 @@ import random
 import threading
 from otree.api import Currency as c, currency_range
 
-from settings import LANG
+from settings import LANG, HRV_REST_SECONDS, hrv_rest_duration_label
 from utils.ai import runGPT, runGPTModel
 from utils.live_prompts import live_prompt
 from utils.promting import renderPrompt
@@ -97,6 +97,27 @@ class Privacy(Page):
     @staticmethod
     def live_method(player, data):
         player.timestamp_privacy = data['timestamp_privacy']
+
+
+class HRVBaseline(Page):
+    form_model = 'player'
+    template_name = f'Introduction/{LANG}/HRVBaseline.html'
+
+    @staticmethod
+    def vars_for_template(player):
+        return dict(
+            hrv_rest_seconds=HRV_REST_SECONDS,
+            hrv_rest_duration=hrv_rest_duration_label(),
+        )
+
+    @staticmethod
+    def live_method(player, data):
+        if data.get('timestamp_hrv_baseline_start'):
+            player.timestamp_hrv_baseline_start = data['timestamp_hrv_baseline_start']
+            return
+        if data.get('timestamp_hrv_baseline_end'):
+            player.timestamp_hrv_baseline_end = data['timestamp_hrv_baseline_end']
+            return
 
 
 # Voice calibration baseline lives where the live session reads it from
@@ -221,5 +242,5 @@ class Processing(Page):
             return
 
 page_sequence = [
-    Privacy, Calibration, BigFiveT1, ERQ, BigFiveT2, Processing
+    Privacy, HRVBaseline, Calibration, BigFiveT1, ERQ, BigFiveT2, Processing
 ]

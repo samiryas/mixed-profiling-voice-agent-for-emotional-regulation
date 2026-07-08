@@ -15,7 +15,7 @@ from .prompts import (
     is_last_phase,
     min_duration,
 )
-from settings import LANG
+from settings import LANG, HRV_REST_SECONDS, hrv_rest_duration_label
 
 doc = """
 Module 2 — Voice Session (scaffold).
@@ -107,6 +107,9 @@ class Player(BasePlayer):
     # T3 emotional state tracking (FR13/FR14)
     emotional_state = models.StringField(initial='calm')    # calm | moderate_distress | high_distress
     sentiment_log   = models.LongStringField(initial='[]')  # [{turn_ts, label, score, state, state_changed}]
+    # HRV④ post-session recovery rest window (D7/D20)
+    timestamp_hrv_recovery_start = models.FloatField(initial=0)
+    timestamp_hrv_recovery_end = models.FloatField(initial=0)
 
 
 class MessageData(ExtraModel):
@@ -396,7 +399,28 @@ class Session(Page):
             return
 
 
-page_sequence = [Session]
+class HRVRecovery(Page):
+    form_model = 'player'
+    template_name = f'Voice/{LANG}/HRVRecovery.html'
+
+    @staticmethod
+    def vars_for_template(player):
+        return dict(
+            hrv_rest_seconds=HRV_REST_SECONDS,
+            hrv_rest_duration=hrv_rest_duration_label(),
+        )
+
+    @staticmethod
+    def live_method(player, data):
+        if data.get('timestamp_hrv_recovery_start'):
+            player.timestamp_hrv_recovery_start = data['timestamp_hrv_recovery_start']
+            return
+        if data.get('timestamp_hrv_recovery_end'):
+            player.timestamp_hrv_recovery_end = data['timestamp_hrv_recovery_end']
+            return
+
+
+page_sequence = [Session, HRVRecovery]
 
 # Best-effort head start: load STT / sentiment / librosa JIT in the background so
 # the first Voice turn is fast. Introduction Processing gates on is_warm() for

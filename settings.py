@@ -29,6 +29,22 @@ SESSION_FIELDS = []
 LANG = 'de' if environ.get('VOICE_LANG', 'en').lower() == 'de' else 'en'
 LANGUAGE_CODE = LANG
 
+# HRV rest-timer duration (baseline + recovery screens). Default 300s (5 min).
+HRV_REST_SECONDS = max(1, int(environ.get('HRV_REST_SECONDS', '300')))
+
+
+def hrv_rest_duration_label():
+    """Human-readable duration for HRV rest-screen copy (matches HRV_REST_SECONDS)."""
+    s = HRV_REST_SECONDS
+    if s >= 60 and s % 60 == 0:
+        m = s // 60
+        if LANG == 'de':
+            return f'{m} Minute' + ('n' if m != 1 else '')
+        return f'{m} minute' + ('s' if m != 1 else '')
+    if LANG == 'de':
+        return f'{s} Sekunden'
+    return f'{s} seconds'
+
 # e.g. EUR, GBP, CNY, JPY
 REAL_WORLD_CURRENCY_CODE = 'USD'
 USE_POINTS = True
