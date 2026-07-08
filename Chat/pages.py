@@ -6,7 +6,9 @@ from os import environ
 from otree.api import Currency as c, currency_range
 
 from Introduction.models import Profile
+from settings import LANG
 from utils.ai import runGPT, runGPTModel
+from utils.live_prompts import live_prompt
 from utils.promting import renderPrompt
 from Voice.services import transcribe, synthesize
 from . import models
@@ -17,7 +19,10 @@ from datetime import datetime, timezone
 # the interview is now conducted by voice; audio is saved alongside the Voice
 # module's recordings so it is served at /static/Voice/recordings/<file>
 RECORDINGS_DIR = '_static/Voice/recordings'
-VOICE_ID = environ.get('VOICE_ID', 'EXAVITQu4vr4xnSDxMaL')
+VOICE_ID = (
+    environ.get('VOICE_ID_DE', 'FOfJ2PMgU6HOGbNYnzto') if LANG == 'de'
+    else environ.get('VOICE_ID_EN', 'WuBPEavIaQB56EnsGvFh')
+)
 SAVE_USER_AUDIO = True
 
 
@@ -30,6 +35,7 @@ def _save_audio(filename: str, audio: bytes) -> str:
 
 class Chat(Page):
     form_model = 'player'
+    template_name = f'Chat/{LANG}/Chat.html'
 
     @staticmethod
     def _ensure_cached_messages(player: Player):
@@ -41,12 +47,18 @@ class Chat(Page):
 
     def before_next_page(self):
         self.participant.vars['cached_messages'] = self.player.cachedMessages
+        if self.participant.vars.get('skip_chat'):
+            pq = self.participant.vars.get('profile_questionnaire', '')
+            if pq and not self.player.profile_interview:
+                self.player.profile_interview = pq
+                self.participant.vars['profile_interview'] = pq
 
     def vars_for_template(self):
         self._ensure_cached_messages(self.player)
         cached_messages = json.loads(self.player.cachedMessages or '[]')
         return {
-            'cached_messages': cached_messages
+            'cached_messages': cached_messages,
+            'dev_skip_chat': environ.get('VOICE_DEV_SKIP_CHAT') == '1',
         }
     
     # live method functions (async)
@@ -67,6 +79,10 @@ class Chat(Page):
         if 'event' in data:
             # grab event type
             event = data['event']
+            # dev-only: skip the voice interview and reuse the questionnaire profile
+            if event == 'skip':
+                player.participant.vars['skip_chat'] = True
+                return
             # handle player input logic
             if event == 'text':
                 # create message id
@@ -83,7 +99,10 @@ class Chat(Page):
                     text = await transcribe(b64)
                 except Exception as e:
                     logging.exception('STT failed')
-                    yield {player.id_in_group: {'error': f'Transcription failed: {e}'}}
+                    yield {player.id_in_group: {'error': (
+                        f'Transkription fehlgeschlagen: {e}' if LANG == 'de'
+                        else f'Transcription failed: {e}'
+                    )}}
                     return
 
                 inputMsg = {'role': 'user', 'content': text}
@@ -123,7 +142,7 @@ class Chat(Page):
                 dateNow = str(datetime.now(tz=timezone.utc).timestamp())
                 botMsgId = 'B' + '-' + str(dateNow)
                 botMessages = messages.copy()
-                botMessages.append({'role':'user','content':"Please ask your next question and stick to your system prompt and the given procedure! Ask about a dimension that has not yet been addressed so that each of the seven dimensions (the five Big Five traits plus Reappraisal and Suppression) is covered exactly once."})
+                botMessages.append({'role':'user','content': live_prompt('next_question')})
                 #botText = await runGPT(messages)
                 botText = await runGPT(botMessages)
                 botMsg = {'role': 'assistant', 'content': botText}
@@ -168,6 +187,7 @@ class Chat(Page):
 
 class Processing(Page):
     form_model = 'player'
+    template_name = f'Chat/{LANG}/Processing.html'
 
     def vars_for_template(self):
         return {'processing_complete': bool(self.player.profile_interview)}
@@ -179,6 +199,12 @@ class Processing(Page):
     async def live_method(player: Player, data):
         msg_type = data.get("type")
         if msg_type == "status" and player.profile_interview == '':
+            if player.participant.vars.get('skip_chat'):
+                pq = player.participant.vars.get('profile_questionnaire', '')
+                if pq:
+                    player.profile_interview = pq
+                yield {player.id_in_group: 'done'}
+                return
             yield {player.id_in_group: 'running' }
             logging.info("Starting Profiling")
             profile_questionnaire = json.loads(player.participant.vars.get('profile_questionnaire', '{}'))
@@ -194,11 +220,11 @@ class Processing(Page):
                 "profile_questionnaire": profile_questionnaire,
                 'response_model': Profile.model_json_schema()
             }
-            messages = [{'role': 'user', 'content': renderPrompt('Chat/templates/Prompts/Profiling.txt', data)}]
+            messages = [{'role': 'user', 'content': renderPrompt(f'Chat/templates/Prompts/{LANG}/Profiling.txt', data)}]
             profile = await runGPT(messages)
             logging.info("Profile text generated")
             messages.append({'role':'assistant', 'content': profile})
-            messages.append({'role':'user','content': renderPrompt('Introduction/templates/Prompts/Modelling.txt', data)})
+            messages.append({'role':'user','content': renderPrompt(f'Introduction/templates/Prompts/{LANG}/Modelling.txt', data)})
             profile = await runGPTModel(messages, Profile)
             logging.info("Profile modeled")
             player.profilingMessages_interview = json.dumps(messages)

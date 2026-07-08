@@ -4,6 +4,7 @@ import json
 import os
 import base64
 import logging
+import threading
 from datetime import datetime, timezone
 
 from .services import transcribe, generate_reply, synthesize
@@ -14,6 +15,7 @@ from .prompts import (
     is_last_phase,
     min_duration,
 )
+from settings import LANG
 
 doc = """
 Module 2 — Voice Session (scaffold).
@@ -45,7 +47,10 @@ class C(BaseConstants):
     RECORDINGS_DIR = '_static/Voice/recordings'
 
     # ElevenLabs voice id (only used when VOICE_TTS_BACKEND=elevenlabs)
-    VOICE_ID = environ.get('VOICE_ID', 'EXAVITQu4vr4xnSDxMaL')
+    VOICE_ID = (
+        environ.get('VOICE_ID_DE', 'FOfJ2PMgU6HOGbNYnzto') if LANG == 'de'
+        else environ.get('VOICE_ID_EN', 'WuBPEavIaQB56EnsGvFh')
+    )
 
     # Experimental condition for this run. Real per-participant assignment is a
     # later task ("Config externalization + condition assignment"); for the
@@ -99,6 +104,9 @@ class Player(BasePlayer):
     current_phase_started = models.FloatField(initial=0)
     # list of {phase, started_at, advanced_at} transition records (post-hoc HRV3 segmentation)
     phase_log = models.LongStringField(initial='[]')
+    # T3 emotional state tracking (FR13/FR14)
+    emotional_state = models.StringField(initial='calm')    # calm | moderate_distress | high_distress
+    sentiment_log   = models.LongStringField(initial='[]')  # [{turn_ts, label, score, state, state_changed}]
 
 
 class MessageData(ExtraModel):
@@ -112,7 +120,7 @@ class MessageData(ExtraModel):
 
 def custom_export(players):
     yield [
-        'sessionId', 'participantId', 'condition', 'phaseLog',
+        'sessionId', 'participantId', 'condition', 'phaseLog', 'sentimentLog',
         'msgId', 'timestamp', 'sender', 'msgText', 'audioPath',
     ]
     for m in MessageData.filter():
@@ -122,6 +130,7 @@ def custom_export(players):
             p.participant.code,
             p.field_maybe_none('condition') or '',
             p.field_maybe_none('phase_log') or '[]',
+            p.field_maybe_none('sentiment_log') or '[]',
             m.msgId,
             m.timestamp,
             m.sender,
@@ -145,6 +154,7 @@ def _save_audio(filename: str, audio: bytes) -> str:
 
 class Session(Page):
     form_model = 'player'
+    template_name = f'Voice/{LANG}/Session.html'
 
     @staticmethod
     def js_vars(player):
@@ -201,7 +211,10 @@ class Session(Page):
                 text = await transcribe(b64)
             except Exception as e:
                 logger.exception('STT failed')
-                yield {player.id_in_group: {'error': f'Transcription failed: {e}'}}
+                yield {player.id_in_group: {'error': (
+                    f'Transkription fehlgeschlagen: {e}' if LANG == 'de'
+                    else f'Transcription failed: {e}'
+                )}}
                 return
 
             MessageData.create(
@@ -228,13 +241,106 @@ class Session(Page):
 
             profile = _load_profile(player)
             condition = player.field_maybe_none('condition') or C.DEFAULT_CONDITION
-            system_prompt = build_system_prompt(profile, condition, player.current_phase)
+
+            # ---- T3 live adaptation: per-turn sentiment + 3-state classifier (FR12/FR13/FR14)
+            # Runs server-side, T3 only. Sentiment always runs; acoustics are fail-open
+            # (skipped when the participant has no calibration baseline recording).
+            state_changed = False
+            new_state = None
+            tts_voice_settings = None  # T3 only — NFR3: T1/T2 must stay None (fixed stimulus)
+            if condition == 'T3':
+                from .sentiment import analyse_sentiment, classify_state
+                from .acoustics import get_baseline, extract_features, compute_deltas
+
+                # most recent participant turn: transcript (from cache) + saved audio (from DB)
+                transcript_text = ''
+                audio_path = ''
+                for m in reversed(messages):
+                    if m.get('sender') == 'user':
+                        transcript_text = m.get('text', '')
+                        rows = MessageData.filter(player=player, msgId=m.get('msgId'))
+                        if rows and rows[0].audioPath:
+                            audio_path = os.path.join(C.RECORDINGS_DIR, rows[0].audioPath)
+                        break
+
+                # acoustic features for this turn (relative to calibration baseline)
+                cal_path = player.participant.vars.get('calibration_audio_path')
+                if not cal_path:
+                    cal_name = player.participant.vars.get('calibration_audio')
+                    if cal_name:
+                        cal_path = os.path.join(C.RECORDINGS_DIR, cal_name)
+                baseline = get_baseline(
+                    player.participant.code,
+                    calibration_path=cal_path,
+                )
+                acoustics_used = bool(baseline and audio_path)
+                if acoustics_used:  # fail-open if calibration recording is missing
+                    try:
+                        turn_features = extract_features(audio_path)
+                        deltas = compute_deltas(turn_features, baseline)
+                    except Exception:
+                        logger.exception(
+                            "Turn acoustic extraction failed for %s (fail-open)",
+                            player.participant.code,
+                        )
+                        deltas = {"pitch_delta": 0.0, "speech_rate_delta": 0.0, "pause_rate_delta": 0.0}
+                        acoustics_used = False
+                else:
+                    deltas = {"pitch_delta": 0.0, "speech_rate_delta": 0.0, "pause_rate_delta": 0.0}
+
+                # sentiment on the transcript
+                sentiment = analyse_sentiment(transcript_text)
+
+                # classify and detect transition
+                new_state = classify_state(sentiment, **deltas)
+                state_changed = (new_state != player.emotional_state)
+                prev_state = player.emotional_state
+                if state_changed:
+                    player.emotional_state = new_state
+
+                # TTS pacing follows persisted state every turn (not trigger-only like the prompt).
+                from .tts_settings import voice_settings_for_emotional_state
+                tts_voice_settings = voice_settings_for_emotional_state(player.emotional_state)
+
+                # surface the per-turn decision in the server log (pilot monitoring)
+                logger.info(
+                    "[T3 %s] sentiment=%s (%.2f) | deltas pitch=%+.2f rate=%+.2f pause=%+.2f%s "
+                    "| state=%s%s",
+                    player.participant.code,
+                    sentiment['label'], sentiment['score'],
+                    deltas['pitch_delta'], deltas['speech_rate_delta'], deltas['pause_rate_delta'],
+                    '' if acoustics_used else ' (no baseline: acoustics skipped)',
+                    new_state,
+                    f' (changed from {prev_state})' if state_changed else ' (unchanged)',
+                )
+
+                # log every turn for pilot hand-validation (NFR5 / study design requirement)
+                log = json.loads(player.sentiment_log or '[]')
+                log.append({
+                    'turn_ts': now_ts,
+                    'label': sentiment['label'],
+                    'score': sentiment['score'],
+                    'state': new_state,
+                    'state_changed': state_changed,
+                    'tts_state': player.emotional_state,
+                    'tts_voice_settings': tts_voice_settings,
+                })
+                player.sentiment_log = json.dumps(log)
+
+            # trigger-only: inject the state instruction on transition, not every turn
+            system_prompt = build_system_prompt(
+                profile, condition, player.current_phase,
+                emotional_state=new_state if state_changed else None,
+            )
 
             try:
                 reply = await generate_reply(messages, system_prompt=system_prompt)
             except Exception as e:
                 logger.exception('LLM failed')
-                yield {player.id_in_group: {'error': f'LLM failed: {e}'}}
+                yield {player.id_in_group: {'error': (
+                    f'KI-Antwort fehlgeschlagen: {e}' if LANG == 'de'
+                    else f'LLM failed: {e}'
+                )}}
                 return
 
             # strip the readiness flag before the text reaches TTS or the transcript (D18/FR22)
@@ -259,10 +365,16 @@ class Session(Page):
 
             # TTS -> save mp3. The stub backend returns no bytes, so the client
             # falls back to showing the transcript only.
+            # NFR3: only T3 passes state-derived voice_settings; T1/T2 use ElevenLabs defaults.
             audioURL = None
             audioPath = ''
             try:
-                audio = await synthesize(reply, voice_id=C.VOICE_ID)
+                if condition == 'T3':
+                    audio = await synthesize(
+                        reply, voice_id=C.VOICE_ID, voice_settings=tts_voice_settings,
+                    )
+                else:
+                    audio = await synthesize(reply, voice_id=C.VOICE_ID)
                 if audio:
                     audioPath = _save_audio(f'{player.session.code}_{botMsgId}.mp3', audio)
                     audioURL = audioPath
@@ -285,3 +397,10 @@ class Session(Page):
 
 
 page_sequence = [Session]
+
+# Best-effort head start: load STT / sentiment / librosa JIT in the background so
+# the first Voice turn is fast. Introduction Processing gates on is_warm() for
+# the real guarantee.
+from .warmup import warmup  # noqa: E402
+
+threading.Thread(target=warmup, daemon=True, name='voice-warmup').start()

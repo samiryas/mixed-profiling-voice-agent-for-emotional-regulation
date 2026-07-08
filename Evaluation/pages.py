@@ -3,12 +3,14 @@ import random
 import threading
 from otree.api import Currency as c, currency_range
 
+from settings import LANG
 from . import models
 from .models import ATTRIBUTES, TRAITS, Constants, Player
 from otree.api import *
 
 class EvaluationQuestionnaire(Page):
     form_model = 'player'
+    template_name = f'Evaluation/{LANG}/EvaluationQuestionnaire.html'
     form_fields = [
         f"questionnaire_{t.lower()}_{attr}"
         for t in TRAITS
@@ -34,6 +36,8 @@ class EvaluationQuestionnaire(Page):
 
 
 class EvaluationQuestionnaireT1(EvaluationQuestionnaire):
+    template_name = f'Evaluation/{LANG}/EvaluationQuestionnaireT1.html'
+
     def is_displayed(self):
         if self.player.field_maybe_none('treatment_evaluation') is None:
             number = random.choice([1, 2])
@@ -41,6 +45,8 @@ class EvaluationQuestionnaireT1(EvaluationQuestionnaire):
         return self.player.treatment_evaluation == 1
 
 class EvaluationQuestionnaireT2(EvaluationQuestionnaire):
+    template_name = f'Evaluation/{LANG}/EvaluationQuestionnaireT2.html'
+
     def is_displayed(self):
         if self.player.field_maybe_none('treatment_evaluation') is None:
             number = random.choice([1, 2])
@@ -50,6 +56,7 @@ class EvaluationQuestionnaireT2(EvaluationQuestionnaire):
 
 class EvaluationInterview(Page):
     form_model = 'player'
+    template_name = f'Evaluation/{LANG}/EvaluationInterview.html'
     form_fields = [
         f"interview_{t.lower()}_{attr}"
         for t in TRAITS
@@ -85,6 +92,7 @@ class EvaluationInterview(Page):
 
 class Refinement(Page):
     form_model = 'player'
+    template_name = f'Evaluation/{LANG}/Refinement.html'
     form_fields = ['refinement_extraversion','refinement_agreeableness','refinement_conscientiousness','refinement_neuroticism','refinement_openness','refinement_reappraisal','refinement_suppression']
 
     @staticmethod

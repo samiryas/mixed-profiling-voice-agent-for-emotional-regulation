@@ -12,13 +12,10 @@
         return STATIC_BASE + audioPath;
     }
 
-    // ---- session end ----
     let sessionEnded = false;
     function finishSession() {
         if (sessionEnded) return;
         sessionEnded = true;
-        // form.submit() (the DOM method) bypasses the preventDefault submit handler and
-        // advances the oTree page sequence.
         const form = document.querySelector('form');
         if (form) form.submit();
     }
@@ -27,7 +24,6 @@
         const form = document.querySelector('form');
         if (form) form.addEventListener('submit', e => e.preventDefault());
 
-        // spacebar toggles recording; stop it from scrolling the page
         window.addEventListener('keydown', function (e) {
             if (e.code === 'Space' || e.keyCode === 32) { e.preventDefault(); return false; }
         });
@@ -36,11 +32,9 @@
             document.getElementById('chatPanel').style.display = 'none';
         }
 
-        // open the live channel (replays any cached messages)
         liveSend({});
     });
 
-    // ---- audio recording (spacebar to start/stop) ----
     const spacebarKey = 32;
     let isRecording = false;
     let audioRecorder;
@@ -81,12 +75,10 @@
         })
         .catch(err => console.error('getUserMedia error:', err));
 
-    // ---- live receive ----
     function liveRecv(data) {
         const event = data['event'];
         const chatMessages = document.getElementById('chatMessages');
 
-        // surface server-side errors (e.g. STT/LLM failure once real backends are wired)
         if (data.error) {
             chatMessages.insertAdjacentHTML('beforeend', `
                 <div class="message sysMsg"><strong>System<br></strong> ${data.error}</div>`);
@@ -94,17 +86,14 @@
             return;
         }
 
-        // participant's own (transcribed) utterance echoed back
         if (event === 'text') {
             chatMessages.insertAdjacentHTML('beforeend', `
                 <div class="message selfMsg" id="${data.msgId}" data-author="${data.sender}">
-                    <strong>You<br></strong> ${data.selfText}
+                    <strong>Sie<br></strong> ${data.selfText}
                 </div>`);
             chatMessages.scrollTop = chatMessages.scrollHeight;
-            // ask the bot to respond
             liveSend({ 'event': 'botMsg' });
 
-        // bot reply (text + optional audio)
         } else if (event === 'botText') {
             const typingId = 'typing-' + Date.now();
             chatMessages.insertAdjacentHTML('beforeend', `
@@ -136,7 +125,6 @@
                         if (data.sessionDone) finishSession();
                     });
                 } else if (data.sessionDone) {
-                    // no audio (e.g. stub TTS): give the closing line a beat to be read
                     setTimeout(finishSession, 1500);
                 }
             }, 1200);
@@ -150,27 +138,25 @@
 <div class='container card mb-3'>
     <div class='row no-gutters'>
 
-        <!-- left: mic / speaker + instructions -->
         <div class='infoBox col-md-4 d-flex align-items-center justify-content-center' style='font-size:22px;'>
-            <b>Prompt:</b> <i>Talk through what's on your mind.</i>
+            <b>Aufforderung:</b> <i>Sprechen Sie darüber, was Ihnen gerade durch den Kopf geht.</i>
             <div style="display: flex; gap: 30px; align-items: center; margin-top: 15px;">
                 <svg id="micIcon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                 <svg id="soundIcon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
             </div>
             <br>
-            Tap the spacebar to start recording. Tap again to stop and send.
+            Drücken Sie die Leertaste, um die Aufnahme zu starten. Erneut drücken, um zu stoppen und zu senden.
             <br>
             <button type="button" class="btn btn-outline-secondary btn-sm mt-3"
-                    onclick="finishSession()">End session</button>
+                    onclick="finishSession()">Sitzung beenden</button>
         </div>
 
-        <!-- right: transcript -->
         <div class='chatPanel col-md-8' id='chatPanel'>
-            <div class='chatHeader'>Voice Session</div>
+            <div class='chatHeader'>Sprachsitzung</div>
             <div id='chatMessages' class='chatMessages'>
                 <div class='message sysMsg'>
                     <strong>System<br></strong>
-                    Tap the spacebar and speak to begin.
+                    Drücken Sie die Leertaste und sprechen Sie, um zu beginnen.
                 </div>
 
                 {{ if cached_messages and show_history }}
@@ -179,7 +165,7 @@
                             <div class="message botMsg"><strong>Bot<br></strong> {{ msg.text }}</div>
                         {{ endif }}
                         {{ if msg.sender == 'user' }}
-                            <div class="message selfMsg"><strong>You<br></strong> {{ msg.text }}</div>
+                            <div class="message selfMsg"><strong>Sie<br></strong> {{ msg.text }}</div>
                         {{ endif }}
                     {{ endfor }}
                 {{ endif }}

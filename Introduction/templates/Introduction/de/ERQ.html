@@ -1,0 +1,82 @@
+{% extends 'global/Page.html' %}
+
+{% block title %}
+    Emotionsregulation
+{% endblock %}
+
+{% block content %}
+    <div class="explanation-container">
+        Wir möchten Ihnen gerne einige Fragen zu Ihren Gefühlen stellen. Uns
+        interessiert, wie Sie Ihre Gefühle unter Kontrolle halten, bzw. regulieren.
+        Zwei Aspekte Ihrer Gefühle interessieren uns dabei besonders. Einerseits ist
+        dies Ihr emotionales Erleben, also was Sie innen fühlen. Andererseits geht es
+        um den emotionalen Ausdruck, also wie Sie Ihre Gefühle verbal, gestisch oder
+        im Verhalten nach außen zeigen. Obwohl manche der Fragen ziemlich ähnlich
+        klingen, unterscheiden sie sich in wesentlichen Punkten. Bitte beantworten
+        Sie die Fragen, indem Sie folgende Antwortmöglichkeiten benutzen:
+        1 = stimmt überhaupt nicht &mdash; 2 &mdash; 3 &mdash; 4 = neutral &mdash; 5 &mdash; 6 &mdash; 7 = stimmt vollkommen.
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 35%">Aussagen</th>
+                <th style="width: 9%">1<br>stimmt überhaupt nicht</th>
+                <th style="width: 9%">2</th>
+                <th style="width: 9%">3</th>
+                <th style="width: 9%">4<br>neutral</th>
+                <th style="width: 9%">5</th>
+                <th style="width: 9%">6</th>
+                <th style="width: 9%">7<br>stimmt vollkommen</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ for field in form }}
+                <tr>
+                    <td>
+                        {% if field.name == 'erq_0' %}
+                            Wenn ich mehr positive Gefühle (wie Freude oder Heiterkeit) empfinden möchte, ändere ich, woran ich denke.
+                        {% elif field.name == 'erq_1' %}
+                            Ich behalte meine Gefühle für mich.
+                        {% elif field.name == 'erq_2' %}
+                            Wenn ich weniger negative Gefühle (wie Traurigkeit oder Ärger) empfinden möchte, ändere ich, woran ich denke.
+                        {% elif field.name == 'erq_3' %}
+                            Wenn ich positive Gefühle empfinde, bemühe ich mich, sie nicht nach außen zu zeigen.
+                        {% elif field.name == 'erq_4' %}
+                            Wenn ich in eine stressige Situation gerate, ändere ich meine Gedanken über die Situation so, dass es mich beruhigt.
+                        {% elif field.name == 'erq_5' %}
+                            Ich halte meine Gefühle unter Kontrolle, indem ich sie nicht nach außen zeige.
+                        {% elif field.name == 'erq_6' %}
+                            Wenn ich mehr positive Gefühle empfinden möchte, versuche ich über die Situation anders zu denken.
+                        {% elif field.name == 'erq_7' %}
+                            Ich halte meine Gefühle unter Kontrolle, indem ich über meine aktuelle Situation anders nachdenke.
+                        {% elif field.name == 'erq_8' %}
+                            Wenn ich negative Gefühle empfinde, sorge ich dafür, sie nicht nach außen zu zeigen.
+                        {% elif field.name == 'erq_9' %}
+                            Wenn ich weniger negative Gefühle empfinden möchte, versuche ich über die Situation anders zu denken.
+                        {% else %}
+                            {{ field.label }}
+                        {% endif %}
+                    </td>
+                    {% for choice in field %}
+                        <td align="center" >{{ choice }}</td>
+                    {% endfor %}
+                </tr>
+            {{ endfor }}
+        </tbody>
+    </table>
+
+    <div style="text-align: right; margin-top: 20px;">
+        {{ next_button }}
+    </div>
+{% endblock %}
+
+{{ block scripts }}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const timestamp = Date.now() / 1000;
+        console.log(timestamp)
+        liveSend({'timestamp_erq': timestamp})
+    });
+</script>
+{{ endblock }}
