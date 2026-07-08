@@ -47,7 +47,10 @@ class C(BaseConstants):
     RECORDINGS_DIR = '_static/Voice/recordings'
 
     # ElevenLabs voice id (only used when VOICE_TTS_BACKEND=elevenlabs)
-    VOICE_ID = environ.get('VOICE_ID', 'EXAVITQu4vr4xnSDxMaL')
+    VOICE_ID = (
+        environ.get('VOICE_ID_DE', 'FOfJ2PMgU6HOGbNYnzto') if LANG == 'de'
+        else environ.get('VOICE_ID_EN', 'WuBPEavIaQB56EnsGvFh')
+    )
 
     # Experimental condition for this run. Real per-participant assignment is a
     # later task ("Config externalization + condition assignment"); for the

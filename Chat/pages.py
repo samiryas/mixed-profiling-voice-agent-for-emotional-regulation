@@ -19,7 +19,10 @@ from datetime import datetime, timezone
 # the interview is now conducted by voice; audio is saved alongside the Voice
 # module's recordings so it is served at /static/Voice/recordings/<file>
 RECORDINGS_DIR = '_static/Voice/recordings'
-VOICE_ID = environ.get('VOICE_ID', 'EXAVITQu4vr4xnSDxMaL')
+VOICE_ID = (
+    environ.get('VOICE_ID_DE', 'FOfJ2PMgU6HOGbNYnzto') if LANG == 'de'
+    else environ.get('VOICE_ID_EN', 'WuBPEavIaQB56EnsGvFh')
+)
 SAVE_USER_AUDIO = True
 
 

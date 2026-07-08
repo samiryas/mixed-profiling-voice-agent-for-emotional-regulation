@@ -39,7 +39,7 @@ BIG5_FIELDS_DE = [
 
 BIG5_FIELDS = BIG5_FIELDS_DE if LANG == 'de' else BIG5_FIELDS_EN
 
-ERQ_FIELDS = [
+ERQ_FIELDS_EN = [
     ('erq_0', "When I want to feel more positive emotion (such as joy or amusement), I change what I'm thinking about."),
     ('erq_1', "I keep my emotions to myself."),
     ('erq_2', "When I want to feel less negative emotion (such as sadness or anger), I change what I'm thinking about."),
@@ -51,6 +51,21 @@ ERQ_FIELDS = [
     ('erq_8', "When I am feeling negative emotions, I make sure not to express them."),
     ('erq_9', "When I want to feel less negative emotion, I change the way I'm thinking about the situation."),
 ]
+
+ERQ_FIELDS_DE = [
+    ('erq_0', "Wenn ich mehr positive Gefühle (wie Freude oder Heiterkeit) empfinden möchte, ändere ich, woran ich denke."),
+    ('erq_1', "Ich behalte meine Gefühle für mich."),
+    ('erq_2', "Wenn ich weniger negative Gefühle (wie Traurigkeit oder Ärger) empfinden möchte, ändere ich, woran ich denke."),
+    ('erq_3', "Wenn ich positive Gefühle empfinde, bemühe ich mich, sie nicht nach außen zu zeigen."),
+    ('erq_4', "Wenn ich in eine stressige Situation gerate, ändere ich meine Gedanken über die Situation so, dass es mich beruhigt."),
+    ('erq_5', "Ich halte meine Gefühle unter Kontrolle, indem ich sie nicht nach außen zeige."),
+    ('erq_6', "Wenn ich mehr positive Gefühle empfinden möchte, versuche ich über die Situation anders zu denken."),
+    ('erq_7', "Ich halte meine Gefühle unter Kontrolle, indem ich über meine aktuelle Situation anders nachdenke."),
+    ('erq_8', "Wenn ich negative Gefühle empfinde, sorge ich dafür, sie nicht nach außen zu zeigen."),
+    ('erq_9', "Wenn ich weniger negative Gefühle empfinden möchte, versuche ich über die Situation anders zu denken."),
+]
+
+ERQ_FIELDS = ERQ_FIELDS_DE if LANG == 'de' else ERQ_FIELDS_EN
 
 class Constants(BaseConstants):
     name_in_url = 'Introduction'
@@ -90,7 +105,7 @@ BIG5_CHOICES_DE = [
 ]
 BIG5_CHOICES = BIG5_CHOICES_DE if LANG == 'de' else BIG5_CHOICES_EN
 
-ERQ_CHOICES = [
+ERQ_CHOICES_EN = [
     [1, "Strongly disagree"],
     [2, "Disagree"],
     [3, "Slightly disagree"],
@@ -99,6 +114,18 @@ ERQ_CHOICES = [
     [6, "Agree"],
     [7, "Strongly agree"],
 ]
+
+ERQ_CHOICES_DE = [
+    [1, "stimmt überhaupt nicht"],
+    [2, "2"],
+    [3, "3"],
+    [4, "neutral"],
+    [5, "5"],
+    [6, "6"],
+    [7, "stimmt vollkommen"],
+]
+
+ERQ_CHOICES = ERQ_CHOICES_DE if LANG == 'de' else ERQ_CHOICES_EN
 
 PRIVACY_AGREEMENT_LABEL_EN = "To continue please first accept our survey privacy policy."
 PRIVACY_AGREEMENT_LABEL_DE = "Um fortzufahren, akzeptieren Sie bitte zuerst unsere Datenschutzerklärung zur Studie."

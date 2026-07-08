@@ -25,6 +25,11 @@ STT_BACKEND = environ.get('VOICE_STT_BACKEND', 'stub')
 LLM_BACKEND = environ.get('VOICE_LLM_BACKEND', 'stub')
 TTS_BACKEND = environ.get('VOICE_TTS_BACKEND', 'stub')
 
+_PROFILE_MARKERS = (
+    'Teilnehmerprofil (personalisieren Sie darauf):',
+    'Participant profile (personalize to this person):',
+)
+
 
 # ===== STT =====================================================================
 
@@ -33,6 +38,8 @@ async def transcribe(audio_bytes: bytes) -> str:
         return await _transcribe_faster_whisper(audio_bytes)
     # stub: the real audio is still captured and saved upstream — only the
     # transcription is faked, so the turn loop runs without any model.
+    if LANG == 'de':
+        return '[Stub-Transkript] (VOICE_STT_BACKEND=whisper-local setzen für faster-whisper)'
     return '[stub transcript] (set VOICE_STT_BACKEND=whisper-local to use faster-whisper)'
 
 
@@ -70,9 +77,18 @@ async def generate_reply(messages: list, *, system_prompt: str) -> str:
         return await _generate_reply_kit(messages, system_prompt)
     # stub: echo whether a profile reached the system prompt, to prove the
     # profile-by-PID wiring and condition handling end-to-end.
-    personalized = 'personalized' if 'User profile' in system_prompt else 'generic'
-    return (f'[stub bot reply | {personalized}] Thanks for sharing. '
-            f'What was going through your mind in that moment?')
+    personalized = (
+        'personalized' if any(m in system_prompt for m in _PROFILE_MARKERS) else 'generic'
+    )
+    if LANG == 'de':
+        return (
+            f'[Stub-Bot-Antwort | {personalized}] Danke fürs Teilen. '
+            f'Was ging Ihnen in dem Moment durch den Kopf?'
+        )
+    return (
+        f'[stub bot reply | {personalized}] Thanks for sharing. '
+        f'What was going through your mind in that moment?'
+    )
 
 
 async def _generate_reply_kit(messages: list, system_prompt: str) -> str:
