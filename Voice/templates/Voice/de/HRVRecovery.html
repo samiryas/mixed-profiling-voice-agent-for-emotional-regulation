@@ -1,0 +1,93 @@
+{% extends 'global/Page.html' %}
+
+{% block title %}
+    Erholungsphase
+{% endblock %}
+
+{% block app_styles %}
+<style>
+    .calib-card { max-width: 820px; margin: 0 auto; }
+    .calib-status { font-size: 16px; color: #444; min-height: 24px; }
+    .calib-progress-track {
+        width: 100%; height: 10px; background: #e4e8ee; border-radius: 6px;
+        overflow: hidden; margin-top: 14px;
+    }
+    .calib-progress-bar { width: 0%; height: 100%; background: #38A1F3; transition: width 0.2s linear; }
+    .hrv-fixation {
+        display: flex; align-items: center; justify-content: center;
+        min-height: 180px; margin: 24px 0;
+        font-size: 72px; color: #abaaaa; line-height: 1; user-select: none;
+    }
+    .calib-ok { color: #1a8a3a; font-weight: 600; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container card calib-card mb-3 p-4">
+    <h3>Erholungsphase</h3>
+    <p>
+        Die Sitzung ist abgeschlossen. Bitte sitzen Sie ruhig da, entspannen Sie sich und atmen Sie
+        {{ hrv_rest_duration }} lang normal, während wir Ihre Erholung aufzeichnen. Vermeiden Sie während dieser Zeit
+        Sprechen oder Bewegungen.
+    </p>
+
+    <div class="hrv-fixation" aria-hidden="true">+</div>
+
+    <div class="calib-progress-track"><div class="calib-progress-bar" id="progressBar"></div></div>
+    <div class="calib-status" id="status">Erholungsphase wird gestartet …</div>
+
+    <div id="nextWrap" style="display:none; text-align:right; margin-top:20px;">
+        {{ next_button }}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const REST_SECONDS = {{ hrv_rest_seconds }};
+
+    let startedAt = 0;
+    let countdownTimer = null;
+
+    const statusEl = document.getElementById('status');
+    const progressBar = document.getElementById('progressBar');
+    const nextWrap = document.getElementById('nextWrap');
+
+    function formatRemaining(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        return 'noch ' + m + ':' + String(s).padStart(2, '0');
+    }
+
+    function tick() {
+        countdownTimer = setInterval(() => {
+            const elapsed = (Date.now() - startedAt) / 1000;
+            const pct = Math.min(100, (elapsed / REST_SECONDS) * 100);
+            progressBar.style.width = pct + '%';
+            const remaining = Math.max(0, Math.ceil(REST_SECONDS - elapsed));
+            statusEl.textContent = formatRemaining(remaining);
+            if (elapsed >= REST_SECONDS) finishTimer();
+        }, 200);
+    }
+
+    function finishTimer() {
+        if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+        progressBar.style.width = '100%';
+        liveSend({ 'timestamp_hrv_recovery_end': Date.now() / 1000 });
+        statusEl.innerHTML = '<span class="calib-ok">Erholungsphase abgeschlossen. Sie können fortfahren.</span>';
+        nextWrap.style.display = 'block';
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        liveSend({ 'timestamp_hrv_recovery_start': Date.now() / 1000 });
+
+        const form = document.querySelector('form');
+        if (form) form.addEventListener('submit', function (e) {
+            if (nextWrap.style.display === 'none') e.preventDefault();
+        });
+
+        startedAt = Date.now();
+        tick();
+    });
+</script>
+{% endblock %}
