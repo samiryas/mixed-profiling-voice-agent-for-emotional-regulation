@@ -1,0 +1,141 @@
+{% extends 'global/Page.html' %}
+
+{% block title %}
+    Abschlussfragebogen
+{% endblock %}
+
+{% block content %}
+    <div class="explanation-container">
+        Die Sitzung mit dem KI-Coach ist nun abgeschlossen. Bitte beantworten Sie
+        abschließend die folgenden Fragen zu Ihrer Erfahrung.
+        Es gibt keine richtigen oder falschen Antworten &mdash; uns interessiert
+        <b>Ihre persönliche Einschätzung.</b>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Ziel der Sitzung</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Aussagen</th>
+                <th style="width: 7.85%">1<br>Nie</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Immer</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Der KI-Coach und ich hatten ein gemeinsames Verständnis vom Ziel der Sitzung.</td>
+                {% for choice in form.wai_goal_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Der KI-Coach hat sich auf das konzentriert, was für mich wichtig war zu bearbeiten.</td>
+                {% for choice in form.wai_goal_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Die Sitzung hat mir geholfen zu klären, welche emotionale Veränderung für mich hilfreich wäre.</td>
+                {% for choice in form.wai_goal_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Vorgehen in der Sitzung</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Aussagen</th>
+                <th style="width: 7.85%">1<br>Nie</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Immer</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Die vom KI-Coach vorgeschlagenen Schritte erschienen mir geeignet, um meine emotionale Situation zu verbessern.</td>
+                {% for choice in form.wai_task_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Ich war zuversichtlich, dass die Übungen in der Sitzung nützlich sind.</td>
+                {% for choice in form.wai_task_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Durch die Sitzung ist mir klarer geworden, wie ich meine Emotionen regulieren könnte.</td>
+                {% for choice in form.wai_task_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Beziehung zum KI-Coach</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Aussagen</th>
+                <th style="width: 7.85%">1<br>Nie</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Immer</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Ich hatte das Gefühl, dass der KI-Coach verstanden hat, was ich versucht habe auszudrücken.</td>
+                {% for choice in form.wai_bond_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Die Interaktion mit dem KI-Coach fühlte sich respektvoll an.</td>
+                {% for choice in form.wai_bond_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Ich fühlte mich wohl dabei, mich auf die Anleitung des KI-Coaches zu verlassen.</td>
+                {% for choice in form.wai_bond_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div style="text-align: right; margin-top: 20px;">
+        {{ next_button }}
+    </div>
+{% endblock %}
+
+{{ block scripts }}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const timestamp = Date.now() / 1000;
+        liveSend({'timestamp_evaluate_questionnaire': timestamp})
+    });
+</script>
+{{ endblock }}

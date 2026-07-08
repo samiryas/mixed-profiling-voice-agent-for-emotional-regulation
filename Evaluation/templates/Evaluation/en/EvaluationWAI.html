@@ -1,0 +1,141 @@
+{% extends 'global/Page.html' %}
+
+{% block title %}
+    Post-Study Questionnaire
+{% endblock %}
+
+{% block content %}
+    <div class="explanation-container">
+        The session with the AI coach is now complete. Please answer the
+        following questions about your experience.
+        There are no right or wrong answers &mdash; we are only interested in
+        <b>your personal opinion.</b>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Goal of the session</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Statements</th>
+                <th style="width: 7.85%">1<br>Never</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Always</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>The AI coach and I had a shared understanding of the goal of the session.</td>
+                {% for choice in form.wai_goal_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The AI coach focused on what was important for me to work on.</td>
+                {% for choice in form.wai_goal_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The session helped clarify what kind of emotional change would be helpful for me.</td>
+                {% for choice in form.wai_goal_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Approach taken in the session</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Statements</th>
+                <th style="width: 7.85%">1<br>Never</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Always</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>The steps suggested by the AI coach seemed appropriate for improving my emotional situation.</td>
+                {% for choice in form.wai_task_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>I felt confident about the usefulness of the activities in the session.</td>
+                {% for choice in form.wai_task_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>As a result of the session, I am clearer about how I might regulate my emotions.</td>
+                {% for choice in form.wai_task_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Relationship with the AI coach</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Statements</th>
+                <th style="width: 7.85%">1<br>Never</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Always</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>I felt that the AI coach understood what I was trying to express.</td>
+                {% for choice in form.wai_bond_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>The interaction with the AI coach felt respectful.</td>
+                {% for choice in form.wai_bond_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>I felt comfortable relying on the AI coach's guidance during the session.</td>
+                {% for choice in form.wai_bond_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div style="text-align: right; margin-top: 20px;">
+        {{ next_button }}
+    </div>
+{% endblock %}
+
+{{ block scripts }}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const timestamp = Date.now() / 1000;
+        liveSend({'timestamp_evaluate_questionnaire': timestamp})
+    });
+</script>
+{{ endblock }}
