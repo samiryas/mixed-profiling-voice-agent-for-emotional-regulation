@@ -41,6 +41,10 @@
     let audioRecorder;
     let audioChunks = [];
     let awaitingVas = false;   // block recording while the VAS stress item is open
+    // engagement (#12): timestamps to measure response latency = gap between the agent's audio
+    // finishing and the participant starting to record.
+    let agentAudioEndedAt = null;
+    let recordingStartedAt = null;
 
     function toggleRecording(event) {
         if (sessionEnded || awaitingVas) return;
@@ -49,6 +53,7 @@
             event.stopPropagation();
             if (!isRecording) {
                 isRecording = true;
+                recordingStartedAt = Date.now();
                 audioChunks = [];
                 audioRecorder.start();
                 document.getElementById('micIcon').style.color = '#38A1F3';
@@ -69,7 +74,13 @@
                 const reader = new FileReader();
                 reader.onloadend = () => {
                     const base64 = reader.result.split(',')[1];
-                    liveSend({ 'event': 'text', 'text': base64 });
+                    // response latency: agent audio end -> recording start (#12)
+                    let latencyMs = null;
+                    if (agentAudioEndedAt !== null && recordingStartedAt !== null) {
+                        latencyMs = recordingStartedAt - agentAudioEndedAt;
+                    }
+                    agentAudioEndedAt = null;   // consume; measured once per turn
+                    liveSend({ 'event': 'text', 'text': base64, 'latencyMs': latencyMs });
                 };
                 reader.readAsDataURL(blob);
             });
@@ -133,14 +144,17 @@
                     audio.addEventListener('play', () => { soundIcon.style.color = '#38A1F3'; });
                     audio.addEventListener('ended', () => {
                         soundIcon.style.color = '#abaaaa';
+                        agentAudioEndedAt = Date.now();   // latency clock starts (#12)
                         if (data.sessionDone) finishSession();
                     });
                     audio.play().catch(e => {
                         console.error('Play error:', e);
+                        agentAudioEndedAt = Date.now();   // no playback -> start from render
                         if (data.sessionDone) finishSession();
                     });
-                } else if (data.sessionDone) {
-                    setTimeout(finishSession, 1500);
+                } else {
+                    agentAudioEndedAt = Date.now();       // text-only reply: start from render
+                    if (data.sessionDone) setTimeout(finishSession, 1500);
                 }
             }, 1200);
         }
@@ -200,11 +214,6 @@
         <div class='chatPanel col-md-8' id='chatPanel'>
             <div class='chatHeader'>Voice Session</div>
             <div id='chatMessages' class='chatMessages'>
-                <div class='message sysMsg'>
-                    <strong>System<br></strong>
-                    Tap the spacebar and speak to begin.
-                </div>
-
                 {{ if cached_messages and show_history }}
                     {{ for msg in cached_messages }}
                         {{ if msg.sender == 'assistant' }}
