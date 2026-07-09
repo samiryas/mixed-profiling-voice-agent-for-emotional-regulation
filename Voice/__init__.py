@@ -12,6 +12,7 @@ from .services import transcribe, generate_reply, synthesize, judge_phase_goal
 from .prompts import (
     build_system_prompt,
     build_judge_prompt,
+    prime_text,
     extract_advance_flag,
     phase_name,
     is_last_phase,
@@ -101,6 +102,12 @@ class Player(BasePlayer):
     condition = models.StringField(initial='')
     # running JSON cache of the conversation
     cachedMessages = models.LongStringField(initial='[]')
+    # emotional prime: scripted, condition-agnostic first Check-In turn (#5, FR24/D6/D19)
+    prime_shown = models.BooleanField(initial=False)
+    # VAS stress manipulation check, captured right after the participant's first response,
+    # before any personalized LLM reply. None until answered.
+    vas_stress = models.IntegerField(min=0, max=10, blank=True)
+    vas_stress_timestamp = models.FloatField(initial=0)
     # four-phase session state (D18)
     current_phase = models.IntegerField(initial=0)
     current_phase_started = models.FloatField(initial=0)
@@ -130,15 +137,19 @@ class MessageData(ExtraModel):
 
 def custom_export(players):
     yield [
-        'sessionId', 'participantId', 'condition', 'phaseLog', 'sentimentLog',
+        'sessionId', 'participantId', 'condition', 'vasStress', 'vasStressTimestamp',
+        'phaseLog', 'sentimentLog',
         'msgId', 'timestamp', 'sender', 'msgText', 'audioPath',
     ]
     for m in MessageData.filter():
         p = m.player
+        vas = p.field_maybe_none('vas_stress')
         yield [
             p.session.code,
             p.participant.code,
             p.field_maybe_none('condition') or '',
+            '' if vas is None else vas,
+            p.field_maybe_none('vas_stress_timestamp') or '',
             p.field_maybe_none('phase_log') or '[]',
             p.field_maybe_none('sentiment_log') or '[]',
             m.msgId,
@@ -197,15 +208,71 @@ class Session(Page):
 
     @staticmethod
     async def live_method(player: Player, data):
-        # no payload -> just replay the cache (page load / refresh)
-        if not data:
-            yield {player.id_in_group: dict(messages=json.loads(player.cachedMessages or '[]'))}
-            return
-
         messages = json.loads(player.cachedMessages or '[]')
         currentPlayer = 'P' + str(player.id_in_group)
         botLabel = 'B' + str(player.id_in_group)
+
+        # no payload -> page load / refresh
+        if not data:
+            # first load: open Check-In with the scripted, condition-agnostic emotional prime
+            # (fixed text, TTS, no LLM) before any personalized behaviour (#5, FR24/D6/D19).
+            if not player.prime_shown:
+                now_ts = datetime.now(tz=timezone.utc).timestamp()
+                dateNow = str(now_ts)
+                botMsgId = botLabel + '-' + dateNow
+                text = prime_text()
+
+                audioURL = None
+                audioPath = ''
+                try:
+                    audio = await synthesize(text, voice_id=C.VOICE_ID)
+                    if audio:
+                        audioPath = _save_audio(f'{player.session.code}_{botMsgId}.mp3', audio)
+                        audioURL = audioPath
+                except Exception:
+                    logger.exception('Prime TTS failed (continuing text-only)')
+
+                MessageData.create(
+                    player=player, msgId=botMsgId, timestamp=dateNow,
+                    sender=botLabel, msgText=text, audioPath=audioPath,
+                )
+                messages.append({'sender': 'assistant', 'label': botLabel, 'msgId': botMsgId, 'text': text})
+                player.cachedMessages = json.dumps(messages)
+                player.prime_shown = True
+                # anchor the Check-In clock at the prime (start of the phase)
+                player.current_phase_started = now_ts
+
+                yield {player.id_in_group: dict(
+                    event='botText', sender=botLabel, botMsgId=botMsgId,
+                    text=text, audioFilePath=audioURL,
+                    phase=phase_name(player.current_phase), sessionDone=False,
+                )}
+                return
+            # already primed. If a refresh interrupted the VAS before it was submitted, re-show
+            # it so the manipulation check is never silently skipped (data integrity for #5).
+            user_turns = sum(1 for mm in messages if mm.get('sender') == 'user')
+            if player.field_maybe_none('vas_stress') is None and user_turns >= 1:
+                yield {player.id_in_group: dict(event='resumeVas', messages=messages)}
+                return
+            yield {player.id_in_group: dict(messages=messages)}
+            return
+
         event = data.get('event')
+
+        # ---- VAS stress manipulation check: stored after the participant's first response,
+        # before any further (personalized) LLM reply (#5). Ack so the client then proceeds.
+        if event == 'vas':
+            try:
+                val = int(data.get('value'))
+            except (TypeError, ValueError):
+                val = None
+            if val is not None and 0 <= val <= 10:
+                player.vas_stress = val
+                player.vas_stress_timestamp = float(
+                    data.get('ts') or datetime.now(tz=timezone.utc).timestamp()
+                )
+            yield {player.id_in_group: dict(event='vasStored')}
+            return
 
         # ---- participant turn: decode audio -> save -> transcribe (STT) -------
         if event == 'text':
@@ -234,8 +301,15 @@ class Session(Page):
             messages.append({'sender': 'user', 'label': currentPlayer, 'msgId': msgId, 'text': text})
             player.cachedMessages = json.dumps(messages)
 
+            # the participant's first response is the answer to the prime -> collect the VAS
+            # stress check before any personalized LLM reply (#5). Client shows the slider and
+            # withholds the bot turn until it is submitted.
+            user_turns = sum(1 for mm in messages if mm.get('sender') == 'user')
+            show_vas = user_turns == 1 and player.field_maybe_none('vas_stress') is None
+
             yield {player.id_in_group: dict(
                 event='text', selfText=text, sender=currentPlayer, msgId=msgId,
+                showVas=show_vas,
             )}
             return
 
