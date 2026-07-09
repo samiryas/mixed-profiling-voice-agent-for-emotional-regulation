@@ -199,11 +199,6 @@
         <div class='chatPanel col-md-8' id='chatPanel'>
             <div class='chatHeader'>Sprachsitzung</div>
             <div id='chatMessages' class='chatMessages'>
-                <div class='message sysMsg'>
-                    <strong>System<br></strong>
-                    Drücke die Leertaste und sprich, um zu beginnen.
-                </div>
-
                 {{ if cached_messages and show_history }}
                     {{ for msg in cached_messages }}
                         {{ if msg.sender == 'assistant' }}
