@@ -119,11 +119,19 @@ def delivery_notes_from_profile(profile: str) -> str:
     return ""
 
 
-def erq_framing(condition: str, profile: str) -> str:
-    """SEAM: choose reappraisal framing from the ERQ -- REAPPRAISAL_DEEPEN vs INTRODUCE
-    (design ref D4-rev). TODO(Finalize personalization thresholds): map ERQ scores -> framing.
-    Returns neutral framing until thresholds are set."""
-    return ""
+def erq_framing(condition: str, erq_category: str | None) -> str:
+    """Return the reappraisal framing block for this participant (design ref D4-rev, issue #8).
+
+    `erq_category` ("deepen"/"introduce") is computed once and frozen at questionnaire time
+    (Introduction, via utils.erq) and read here as a label -- the decision is not remade per turn.
+    T1 withholds personalization, so it always gets neutral framing (empty) regardless of the
+    stored category; an unknown/missing category is also neutral (the phase prompt then introduces
+    reappraisal generically).
+    """
+    if condition == "T1" or erq_category not in ("deepen", "introduce"):
+        return ""
+    from utils.promting import renderPrompt
+    return renderPrompt(f"{_prompt_dir()}/framing_{erq_category}.txt", {})
 
 
 # ----- prompt assembly ---------------------------------------------------------
@@ -134,6 +142,7 @@ def build_system_prompt(
     phase_index: int,
     emotional_state: str | None = None,
     transition_from: str | None = None,
+    erq_category: str | None = None,
 ) -> str:
     """Assemble the layered system prompt for the current turn.
 
@@ -171,7 +180,7 @@ def build_system_prompt(
         profile_block = renderPrompt(f"{d}/generic_profile.txt", {})
 
     phase_ctx = {
-        "framing": erq_framing(condition, profile),
+        "framing": erq_framing(condition, erq_category),
         "delivery_notes": delivery_notes_from_profile(profile),
     }
     phase_block = renderPrompt(f"{d}/phase_{phase_name(phase_index)}.txt", phase_ctx)

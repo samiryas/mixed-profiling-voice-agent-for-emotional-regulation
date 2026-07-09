@@ -192,7 +192,10 @@ class Session(Page):
             debug_condition=condition,
             debug_profile_source=profile_source,
             debug_profile=profile,
-            debug_system_prompt=build_system_prompt(profile, condition, player.current_phase),
+            debug_system_prompt=build_system_prompt(
+                profile, condition, player.current_phase,
+                erq_category=pv.get('erq_framing_category'),
+            ),
         )
 
     @staticmethod
@@ -344,11 +347,13 @@ class Session(Page):
             )
             player.phase_just_advanced = False
 
-            # trigger-only: inject the state instruction on transition, not every turn
+            # trigger-only: inject the state instruction on transition, not every turn.
+            # erq_category (frozen at questionnaire time) selects DEEPEN/INTRODUCE framing (#8).
             system_prompt = build_system_prompt(
                 profile, condition, player.current_phase,
                 emotional_state=new_state if state_changed else None,
                 transition_from=transition_from,
+                erq_category=player.participant.vars.get('erq_framing_category'),
             )
 
             try:
