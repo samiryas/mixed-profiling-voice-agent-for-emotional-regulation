@@ -40,9 +40,10 @@
     let isRecording = false;
     let audioRecorder;
     let audioChunks = [];
+    let awaitingVas = false;   // block recording while the VAS stress item is open
 
     function toggleRecording(event) {
-        if (sessionEnded) return;
+        if (sessionEnded || awaitingVas) return;
         if (event.keyCode === spacebarKey && !event.repeat) {
             event.preventDefault();
             event.stopPropagation();
@@ -93,7 +94,20 @@
                     <strong>You<br></strong> ${data.selfText}
                 </div>`);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            // first response answers the prime -> collect the VAS stress rating before the
+            // bot replies; otherwise continue the conversation normally.
+            if (data.showVas) {
+                showVasUI();
+            } else {
+                liveSend({ 'event': 'botMsg' });
+            }
+
+        } else if (event === 'vasStored') {
             liveSend({ 'event': 'botMsg' });
+
+        } else if (event === 'resumeVas') {
+            // a refresh interrupted the VAS before submission -> re-show it
+            if (!awaitingVas && !document.getElementById('vasBox')) showVasUI();
 
         } else if (event === 'botText') {
             const typingId = 'typing-' + Date.now();
@@ -130,6 +144,37 @@
                 }
             }, 1200);
         }
+    }
+
+    // VAS stress manipulation check (#5): shown once, right after the participant's first
+    // response. Blocks recording and withholds the bot turn until submitted.
+    function showVasUI() {
+        awaitingVas = true;
+        const chatMessages = document.getElementById('chatMessages');
+        const wrap = document.createElement('div');
+        wrap.className = 'message sysMsg';
+        wrap.id = 'vasBox';
+        wrap.innerHTML = `
+            <strong>Quick check-in</strong><br>
+            How stressed do you feel right now?
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:10px;">
+                <span>Not at all stressed</span><span>Extremely stressed</span>
+            </div>
+            <input type="range" id="vasSlider" min="0" max="10" step="1" value="5" style="width:100%;">
+            <div style="text-align:center; margin:6px 0;">Selected: <span id="vasVal">5</span> / 10</div>
+            <button type="button" class="btn btn-primary btn-sm" id="vasSubmit">Submit</button>`;
+        chatMessages.appendChild(wrap);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        const slider = document.getElementById('vasSlider');
+        const valOut = document.getElementById('vasVal');
+        slider.addEventListener('input', () => { valOut.textContent = slider.value; });
+        document.getElementById('vasSubmit').addEventListener('click', () => {
+            const v = parseInt(slider.value, 10);
+            liveSend({ 'event': 'vas', 'value': v, 'ts': Date.now() / 1000 });
+            wrap.remove();
+            awaitingVas = false;
+        });
     }
 </script>
 {{ endblock }}
