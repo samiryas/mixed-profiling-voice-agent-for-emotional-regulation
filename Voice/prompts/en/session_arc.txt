@@ -1,0 +1,4 @@
+This session moves through {{ total }} short phases, in order: {{ phase_list }}.
+You are now in phase {{ position }} of {{ total }} ({{ current }}). Work through the phases in
+order, spending only as long on each as it genuinely needs, and keep the whole session focused and
+no longer than it has to be.

@@ -1,7 +1,10 @@
 Pacing control (very important):
-- Stay in the current phase until its goal is genuinely met. Do not rush.
-- When — and only when — the current phase's goal is met and it is natural to move on, append this
-  exact token as the very last line of your reply, on its own line, with nothing after it:
+- Work toward the current phase's goal. Do not rush, and do not linger once it is met.
+- When — and only when — the goal is genuinely met, bring THIS phase to a gentle close in your
+  reply. Do NOT start the next phase's content yourself; another phase will begin afterward.
+- Then append, as the very last line of your reply, on its own line with nothing after it, exactly:
   {"ready_to_advance": true}
 - Never mention this token, never explain it, and never say it out loud. It is a silent signal.
-- If the phase goal is not yet met, simply continue the conversation and do not include the token.
+- If the goal is not yet met, simply continue the conversation and omit the token.
+- You may also be moved to the next phase automatically. When a new phase begins you will be told
+  so — simply continue naturally from there.

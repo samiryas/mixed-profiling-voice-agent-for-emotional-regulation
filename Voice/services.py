@@ -15,6 +15,7 @@ actually selected. Wiring each real backend is its own downstream task
 """
 import asyncio
 import logging
+import re
 from os import environ
 
 from settings import LANG
@@ -107,6 +108,61 @@ async def _generate_reply_kit(messages: list, system_prompt: str) -> str:
         messages=chat,
     )
     return (resp.choices[0].message.content or '').strip()
+
+
+# ----- phase-readiness judge (Option B) ----------------------------------------
+
+# Parse a {"met": true|false} verdict; tolerant of reformatting and of harmony-model junk
+# around it (we search anywhere in the content rather than requiring clean JSON).
+_MET_RE = re.compile(r'"?met"?\s*[:=]\s*"?(true|false)"?', re.IGNORECASE)
+
+
+def _parse_met(content: str) -> bool | None:
+    """Extract the judge's boolean verdict from raw model content. None if unparseable."""
+    if not content:
+        return None
+    m = _MET_RE.search(content)
+    if m:
+        return m.group(1).lower() == 'true'
+    # last resort: a lone true/false with no ambiguity
+    low = content.lower()
+    has_true, has_false = 'true' in low, 'false' in low
+    if has_true and not has_false:
+        return True
+    if has_false and not has_true:
+        return False
+    return None
+
+
+async def judge_phase_goal(system_prompt: str, messages: list) -> bool | None:
+    """Out-of-band readiness judge: a second, structured LLM call that decides whether the
+    current phase's goal is met, kept entirely separate from the coaching reply so the spoken
+    text never carries a control signal.
+
+    Returns True/False, or None when the judge is unavailable (stub backend) or the call/parse
+    fails -- the caller then falls back to the inline flag, and the phase ceiling always applies.
+    """
+    if LLM_BACKEND not in ('kit', 'openai'):
+        return None
+    try:
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI(
+            api_key=environ.get('OPENAI_KEY', 'unused'),
+            base_url=environ.get('OPENAI_URL'),
+        )
+        chat = [{'role': 'system', 'content': system_prompt}]
+        for m in messages:
+            role = 'assistant' if m.get('sender') == 'assistant' else 'user'
+            chat.append({'role': role, 'content': m.get('text', '')})
+        resp = await client.chat.completions.create(
+            model=environ.get('OPENAI_MODEL', 'gpt-oss:120b'),
+            messages=chat,
+            temperature=0,
+        )
+        return _parse_met(resp.choices[0].message.content or '')
+    except Exception:
+        logger.exception('phase-goal judge failed (falling back to inline flag)')
+        return None
 
 
 # ===== TTS =====================================================================

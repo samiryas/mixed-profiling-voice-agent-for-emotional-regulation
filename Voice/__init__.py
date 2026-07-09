@@ -1,5 +1,6 @@
 from otree.api import *
 from os import environ
+import asyncio
 import json
 import os
 import base64
@@ -7,13 +8,14 @@ import logging
 import threading
 from datetime import datetime, timezone
 
-from .services import transcribe, generate_reply, synthesize
+from .services import transcribe, generate_reply, synthesize, judge_phase_goal
 from .prompts import (
     build_system_prompt,
+    build_judge_prompt,
     extract_advance_flag,
     phase_name,
     is_last_phase,
-    min_duration,
+    advance_decision,
 )
 from settings import LANG, HRV_REST_SECONDS, hrv_rest_duration_label
 
@@ -102,7 +104,12 @@ class Player(BasePlayer):
     # four-phase session state (D18)
     current_phase = models.IntegerField(initial=0)
     current_phase_started = models.FloatField(initial=0)
-    # list of {phase, started_at, advanced_at} transition records (post-hoc HRV3 segmentation)
+    # bot turns taken within the current phase (drives turn-based advancement)
+    current_phase_turns = models.IntegerField(initial=0)
+    # set when a phase transition just happened, so the next turn acknowledges the shift
+    phase_just_advanced = models.BooleanField(initial=False)
+    # list of {phase, started_at, advanced_at, turns, reason} transition records
+    # (post-hoc HRV3 segmentation + engagement metrics)
     phase_log = models.LongStringField(initial='[]')
     # T3 emotional state tracking (FR13/FR14)
     emotional_state = models.StringField(initial='calm')    # calm | moderate_distress | high_distress
@@ -330,10 +337,18 @@ class Session(Page):
                 })
                 player.sentiment_log = json.dumps(log)
 
+            # first turn of a new phase: name the phase we just left so the model acknowledges
+            # the shift instead of being handed a fresh instruction with no context (D18).
+            transition_from = (
+                phase_name(player.current_phase - 1) if player.phase_just_advanced else None
+            )
+            player.phase_just_advanced = False
+
             # trigger-only: inject the state instruction on transition, not every turn
             system_prompt = build_system_prompt(
                 profile, condition, player.current_phase,
                 emotional_state=new_state if state_changed else None,
+                transition_from=transition_from,
             )
 
             try:
@@ -346,25 +361,22 @@ class Session(Page):
                 )}}
                 return
 
-            # strip the readiness flag before the text reaches TTS or the transcript (D18/FR22)
+            # sanitize the reply (strip any leaked flag/harmony tokens) before it reaches TTS or
+            # the transcript (D18/FR22). wants_advance is the inline-flag *fallback* signal.
             reply, wants_advance = extract_advance_flag(reply)
 
-            # hybrid phase transition: honour the flag only once the phase's minimum duration
-            # has elapsed; log the timestamp; finish after the last phase (D18)
-            session_done = False
-            if wants_advance and (now_ts - player.current_phase_started) >= min_duration(player.current_phase):
-                log = json.loads(player.phase_log or '[]')
-                log.append({
-                    'phase': phase_name(player.current_phase),
-                    'started_at': player.current_phase_started,
-                    'advanced_at': now_ts,
-                })
-                player.phase_log = json.dumps(log)
-                if is_last_phase(player.current_phase):
-                    session_done = True
-                else:
-                    player.current_phase += 1
-                    player.current_phase_started = now_ts
+            # this reply is the current phase's turn; count it before deciding (D18)
+            player.current_phase_turns += 1
+
+            # Option B: decide phase readiness out-of-band. A separate structured judge call reads
+            # the conversation (including this reply) and the phase's goal, so the coaching reply
+            # above never has to carry a control signal. Runs concurrently with TTS to hide its
+            # latency; falls back to the inline flag if the judge is unavailable, and the ceiling
+            # always applies regardless.
+            judge_msgs = messages + [{'sender': 'assistant', 'text': reply}]
+            judge_task = asyncio.ensure_future(
+                judge_phase_goal(build_judge_prompt(player.current_phase), judge_msgs)
+            )
 
             # TTS -> save mp3. The stub backend returns no bytes, so the client
             # falls back to showing the transcript only.
@@ -383,6 +395,39 @@ class Session(Page):
                     audioURL = audioPath
             except Exception:
                 logger.exception('TTS failed (continuing text-only)')
+
+            # collect the judge verdict (was running during TTS); None -> use the inline flag.
+            judge_met = await judge_task
+            ready_to_advance = wants_advance if judge_met is None else judge_met
+
+            # turn-gated advancement with a hard ceiling: honour readiness once the turn floor is
+            # met, but force-advance if a turn/time ceiling is hit so a phase can never hang.
+            # log the transition (turns + reason feed engagement metrics); finish after the last.
+            elapsed = now_ts - player.current_phase_started
+            advance, reason = advance_decision(
+                player.current_phase, player.current_phase_turns, elapsed, ready_to_advance,
+            )
+            if advance and reason == 'flag':
+                # distinguish how readiness was signalled, for pilot hand-validation (#12)
+                reason = 'judge' if judge_met is not None else 'flag'
+            session_done = False
+            if advance:
+                log = json.loads(player.phase_log or '[]')
+                log.append({
+                    'phase': phase_name(player.current_phase),
+                    'started_at': player.current_phase_started,
+                    'advanced_at': now_ts,
+                    'turns': player.current_phase_turns,
+                    'reason': reason,
+                })
+                player.phase_log = json.dumps(log)
+                if is_last_phase(player.current_phase):
+                    session_done = True
+                else:
+                    player.current_phase += 1
+                    player.current_phase_started = now_ts
+                    player.current_phase_turns = 0
+                    player.phase_just_advanced = True
 
             MessageData.create(
                 player=player, msgId=botMsgId, timestamp=dateNow,
