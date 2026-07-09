@@ -103,8 +103,7 @@ class HRVBaseline(Page):
     form_model = 'player'
     template_name = f'Introduction/{LANG}/HRVBaseline.html'
 
-    @staticmethod
-    def vars_for_template(player):
+    def vars_for_template(self):
         return dict(
             hrv_rest_seconds=HRV_REST_SECONDS,
             hrv_rest_duration=hrv_rest_duration_label(),
