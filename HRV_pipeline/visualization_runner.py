@@ -22,12 +22,27 @@ class HRVVisualizationRunner:
             step_seconds=step_seconds
         )
 
+def main():
+    csv_file = input(
+        "CSV-Datei eingeben [messung_proband1.csv]: "
+    ).strip() or "messung_proband1.csv"
+
+    runner = HRVVisualizationRunner(csv_file=csv_file)
+
+    baseline_start = input(
+        "Startzeit der 5-Minuten-Baseline eingeben "
+        "(z. B. 19:40:39): "
+    ).strip()
+
+    if not baseline_start:
+        print("Keine Baseline-Startzeit eingegeben. Programm wird beendet.")
+        return
+
+    try:
+        runner.run_baseline_calculation(start_time=baseline_start)
+    except (ValueError, TypeError) as error:
+        print(f"Ungültige Baseline-Startzeit: {error}")
+
 
 if __name__ == "__main__":
-    runner = HRVVisualizationRunner(csv_file="participant_1_hrv_raw.csv")
-    runner.run_rolling_visualization(
-        start_time="00:16:06.104",
-        end_time="00:23:43.799",
-        window_minutes=1,
-        step_seconds=30
-    )
+    main()
