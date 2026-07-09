@@ -39,9 +39,10 @@
     let isRecording = false;
     let audioRecorder;
     let audioChunks = [];
+    let awaitingVas = false;   // Aufnahme blockieren, solange das VAS-Stressitem offen ist
 
     function toggleRecording(event) {
-        if (sessionEnded) return;
+        if (sessionEnded || awaitingVas) return;
         if (event.keyCode === spacebarKey && !event.repeat) {
             event.preventDefault();
             event.stopPropagation();
@@ -89,10 +90,23 @@
         if (event === 'text') {
             chatMessages.insertAdjacentHTML('beforeend', `
                 <div class="message selfMsg" id="${data.msgId}" data-author="${data.sender}">
-                    <strong>Sie<br></strong> ${data.selfText}
+                    <strong>Du<br></strong> ${data.selfText}
                 </div>`);
             chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Erste Antwort beantwortet den Prime -> VAS-Stresswert erheben, bevor der Bot
+            // antwortet; sonst normal fortfahren.
+            if (data.showVas) {
+                showVasUI();
+            } else {
+                liveSend({ 'event': 'botMsg' });
+            }
+
+        } else if (event === 'vasStored') {
             liveSend({ 'event': 'botMsg' });
+
+        } else if (event === 'resumeVas') {
+            // Ein Reload hat das VAS vor dem Absenden unterbrochen -> erneut anzeigen
+            if (!awaitingVas && !document.getElementById('vasBox')) showVasUI();
 
         } else if (event === 'botText') {
             const typingId = 'typing-' + Date.now();
@@ -130,6 +144,37 @@
             }, 1200);
         }
     }
+
+    // VAS-Stress-Manipulationscheck (#5): erscheint einmal, direkt nach der ersten Antwort der
+    // Person. Blockiert die Aufnahme und hält die Bot-Antwort zurück, bis abgesendet wurde.
+    function showVasUI() {
+        awaitingVas = true;
+        const chatMessages = document.getElementById('chatMessages');
+        const wrap = document.createElement('div');
+        wrap.className = 'message sysMsg';
+        wrap.id = 'vasBox';
+        wrap.innerHTML = `
+            <strong>Kurze Zwischenfrage</strong><br>
+            Wie gestresst fühlst du dich gerade?
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:10px;">
+                <span>Überhaupt nicht gestresst</span><span>Äußerst gestresst</span>
+            </div>
+            <input type="range" id="vasSlider" min="0" max="10" step="1" value="5" style="width:100%;">
+            <div style="text-align:center; margin:6px 0;">Ausgewählt: <span id="vasVal">5</span> / 10</div>
+            <button type="button" class="btn btn-primary btn-sm" id="vasSubmit">Absenden</button>`;
+        chatMessages.appendChild(wrap);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        const slider = document.getElementById('vasSlider');
+        const valOut = document.getElementById('vasVal');
+        slider.addEventListener('input', () => { valOut.textContent = slider.value; });
+        document.getElementById('vasSubmit').addEventListener('click', () => {
+            const v = parseInt(slider.value, 10);
+            liveSend({ 'event': 'vas', 'value': v, 'ts': Date.now() / 1000 });
+            wrap.remove();
+            awaitingVas = false;
+        });
+    }
 </script>
 {{ endblock }}
 
@@ -139,13 +184,13 @@
     <div class='row no-gutters'>
 
         <div class='infoBox col-md-4 d-flex align-items-center justify-content-center' style='font-size:22px;'>
-            <b>Aufforderung:</b> <i>Sprechen Sie darüber, was Ihnen gerade durch den Kopf geht.</i>
+            <b>Aufforderung:</b> <i>Sprich darüber, was dir gerade durch den Kopf geht.</i>
             <div style="display: flex; gap: 30px; align-items: center; margin-top: 15px;">
                 <svg id="micIcon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
                 <svg id="soundIcon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
             </div>
             <br>
-            Drücken Sie die Leertaste, um die Aufnahme zu starten. Erneut drücken, um zu stoppen und zu senden.
+            Drücke die Leertaste, um die Aufnahme zu starten. Erneut drücken, um zu stoppen und zu senden.
             <br>
             <button type="button" class="btn btn-outline-secondary btn-sm mt-3"
                     onclick="finishSession()">Sitzung beenden</button>
@@ -156,7 +201,7 @@
             <div id='chatMessages' class='chatMessages'>
                 <div class='message sysMsg'>
                     <strong>System<br></strong>
-                    Drücken Sie die Leertaste und sprechen Sie, um zu beginnen.
+                    Drücke die Leertaste und sprich, um zu beginnen.
                 </div>
 
                 {{ if cached_messages and show_history }}
@@ -165,7 +210,7 @@
                             <div class="message botMsg"><strong>Bot<br></strong> {{ msg.text }}</div>
                         {{ endif }}
                         {{ if msg.sender == 'user' }}
-                            <div class="message selfMsg"><strong>Sie<br></strong> {{ msg.text }}</div>
+                            <div class="message selfMsg"><strong>Du<br></strong> {{ msg.text }}</div>
                         {{ endif }}
                     {{ endfor }}
                 {{ endif }}
