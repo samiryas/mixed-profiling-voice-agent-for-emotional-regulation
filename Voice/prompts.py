@@ -198,6 +198,17 @@ def build_system_prompt(
     )
 
 
+def prime_text() -> str:
+    """The fixed, condition-agnostic emotional prime that opens Check-In (#5, FR24/D6/D19).
+
+    Identical across T1/T2/T3 so the prime dose does not vary by condition. Delivered as a
+    scripted first bot turn (no LLM) before any personalized behaviour begins.
+    """
+    from utils.promting import renderPrompt
+
+    return renderPrompt(f"{_prompt_dir()}/prime_checkin.txt", {}).strip()
+
+
 def build_judge_prompt(phase_index: int) -> str:
     """System prompt for the out-of-band phase-readiness judge (Option B).
 
