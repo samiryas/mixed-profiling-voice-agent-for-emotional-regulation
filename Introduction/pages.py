@@ -177,6 +177,17 @@ class Processing(Page):
                 CALIBRATION_DIR, self.player.calibration_audio,
             )
 
+        # Freeze the ERQ reappraisal-framing category once, here (design ref D4-rev, issue #8).
+        # The Voice session reads only this label; the decision is never remade per turn (NFR6).
+        from utils.erq import framing_category
+        erq_vals = [self.player.field_maybe_none(f'erq_{i}') for i in range(10)]
+        if all(v is not None for v in erq_vals):
+            category, z_reapp, z_supp = framing_category(erq_vals)
+            self.participant.vars['erq_framing_category'] = category
+            self.participant.vars['erq_framing_z'] = {
+                'reappraisal': round(z_reapp, 3), 'suppression': round(z_supp, 3),
+            }
+
     @staticmethod
     async def _ensure_voice_models_warm():
         from Voice.warmup import is_warm, warmup
