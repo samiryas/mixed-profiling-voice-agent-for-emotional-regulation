@@ -133,31 +133,102 @@ class MessageData(ExtraModel):
     sender = models.StringField()
     msgText = models.StringField()
     audioPath = models.StringField(initial='')
+    # engagement (#12): participant response latency = ms between the agent's audio finishing
+    # and the participant starting to record. Client-measured; None on agent turns / if unknown.
+    responseLatencyMs = models.FloatField(blank=True)
+
+
+# ----- engagement metrics (#12) ------------------------------------------------
+
+def _word_count(text: str) -> int:
+    return len((text or '').split())
+
+
+def _turn_acoustics(audio_filename: str):
+    """Pause/speech rate for one saved participant turn, computed at export time so it runs for
+    ALL conditions without any per-turn runtime cost (#12). Fail-open: returns None if the file
+    is missing or librosa/ffmpeg is unavailable."""
+    if not audio_filename:
+        return None
+    try:
+        from .acoustics import extract_features
+        path = os.path.join(C.RECORDINGS_DIR, audio_filename)
+        if not os.path.exists(path):
+            return None
+        return extract_features(path)
+    except Exception:
+        logger.exception('export acoustics failed for %s (skipping)', audio_filename)
+        return None
+
+
+def _engagement_summary(player) -> dict:
+    """Per-session engagement aggregates derived from stored data (#12). Zero runtime cost."""
+    msgs = list(MessageData.filter(player=player))
+    ts = [float(m.timestamp) for m in msgs if m.timestamp]
+    user = [m for m in msgs if m.sender == 'Subject']
+    agent = [m for m in msgs if m.sender != 'Subject']
+    user_words = sum(_word_count(m.msgText) for m in user)
+    agent_words = sum(_word_count(m.msgText) for m in agent)
+    lat = [m.field_maybe_none('responseLatencyMs') for m in user]
+    lat = [x for x in lat if x is not None]
+    plog = json.loads(player.field_maybe_none('phase_log') or '[]')
+    return dict(
+        sessionDurationSec=round(max(ts) - min(ts), 2) if len(ts) >= 2 else 0,
+        totalUserTurns=len(user),
+        totalAgentTurns=len(agent),
+        userWordTotal=user_words,
+        agentWordTotal=agent_words,
+        wordRatioUserAgent=round(user_words / agent_words, 3) if agent_words else '',
+        meanResponseLatencyMs=round(sum(lat) / len(lat), 1) if lat else '',
+        phasesEarly=sum(1 for e in plog if e.get('reason') in ('judge', 'flag')),
+        phasesForced=sum(1 for e in plog if e.get('reason') == 'forced'),
+    )
 
 
 def custom_export(players):
     yield [
-        'sessionId', 'participantId', 'condition', 'vasStress', 'vasStressTimestamp',
-        'phaseLog', 'sentimentLog',
+        'sessionId', 'participantId', 'condition',
+        # per-session engagement aggregates (#12), repeated on each of the player's rows
+        'sessionDurationSec', 'totalUserTurns', 'totalAgentTurns',
+        'userWordTotal', 'agentWordTotal', 'wordRatioUserAgent', 'meanResponseLatencyMs',
+        'phasesEarly', 'phasesForced',
+        'vasStress', 'vasStressTimestamp', 'phaseLog', 'sentimentLog',
+        # per-turn record + per-turn engagement metrics (#12)
         'msgId', 'timestamp', 'sender', 'msgText', 'audioPath',
+        'wordCount', 'responseLatencyMs', 'pauseRate', 'speechRate', 'pitchMean',
     ]
-    for m in MessageData.filter():
-        p = m.player
+    for p in players:
         vas = p.field_maybe_none('vas_stress')
-        yield [
+        s = _engagement_summary(p)
+        session_cols = [
             p.session.code,
             p.participant.code,
             p.field_maybe_none('condition') or '',
+            s['sessionDurationSec'], s['totalUserTurns'], s['totalAgentTurns'],
+            s['userWordTotal'], s['agentWordTotal'], s['wordRatioUserAgent'],
+            s['meanResponseLatencyMs'], s['phasesEarly'], s['phasesForced'],
             '' if vas is None else vas,
             p.field_maybe_none('vas_stress_timestamp') or '',
             p.field_maybe_none('phase_log') or '[]',
             p.field_maybe_none('sentiment_log') or '[]',
-            m.msgId,
-            m.timestamp,
-            m.sender,
-            m.msgText,
-            m.audioPath,
         ]
+        for m in MessageData.filter(player=p):
+            is_user = m.sender == 'Subject'
+            latency = m.field_maybe_none('responseLatencyMs') if is_user else None
+            # acoustic engagement metrics for participant turns, all conditions (export-time)
+            pause = speech = pitch = ''
+            if is_user:
+                feats = _turn_acoustics(m.audioPath)
+                if feats:
+                    pause = round(feats['pause_rate'], 4)
+                    speech = round(feats['speech_rate'], 4)
+                    pitch = round(feats['pitch_mean'], 1)
+            yield session_cols + [
+                m.msgId, m.timestamp, m.sender, m.msgText, m.audioPath,
+                _word_count(m.msgText),
+                '' if latency is None else round(latency, 1),
+                pause, speech, pitch,
+            ]
 
 
 # ----- audio helper ------------------------------------------------------------
@@ -297,9 +368,19 @@ class Session(Page):
                 )}}
                 return
 
+            # response latency (#12): ms between the agent's audio finishing and this recording
+            # starting, measured client-side. Ignore missing/negative values.
+            try:
+                latency = float(data.get('latencyMs'))
+                if latency < 0:
+                    latency = None
+            except (TypeError, ValueError):
+                latency = None
+
             MessageData.create(
                 player=player, msgId=msgId, timestamp=dateNow,
                 sender='Subject', msgText=text, audioPath=audioPath,
+                responseLatencyMs=latency,
             )
             messages.append({'sender': 'user', 'label': currentPlayer, 'msgId': msgId, 'text': text})
             player.cachedMessages = json.dumps(messages)
