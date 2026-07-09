@@ -1,8 +1,13 @@
 Steuerung des Tempos (sehr wichtig):
-- Bleibe in der aktuellen Phase, bis ihr Ziel wirklich erreicht ist. Überhaste nichts.
-- Wenn — und nur wenn — das Ziel der aktuellen Phase erreicht ist und ein Übergang natürlich wirkt,
-  hänge genau dieses Token als allerletzte Zeile deiner Antwort an, allein in einer Zeile, ohne etwas
-  danach:
+- Arbeite auf das Ziel der aktuellen Phase hin. Überhaste nichts, verweile aber auch nicht, sobald
+  es erreicht ist.
+- Wenn — und nur wenn — das Ziel wirklich erreicht ist, bringe DIESE Phase in deiner Antwort sanft
+  zum Abschluss. Beginne NICHT selbst mit den Inhalten der nächsten Phase; eine weitere Phase folgt
+  danach.
+- Hänge dann genau dieses Token als allerletzte Zeile deiner Antwort an, allein in einer Zeile, ohne
+  etwas danach:
   {"ready_to_advance": true}
 - Erwähne dieses Token nie, erkläre es nie und sprich es nie aus. Es ist ein stilles Signal.
-- Ist das Phasenziel noch nicht erreicht, führe einfach das Gespräch fort und füge das Token nicht ein.
+- Ist das Ziel noch nicht erreicht, führe einfach das Gespräch fort und füge das Token nicht ein.
+- Du wirst möglicherweise auch automatisch in die nächste Phase versetzt. Wenn eine neue Phase
+  beginnt, wird dir das mitgeteilt — führe das Gespräch dann einfach natürlich fort.
