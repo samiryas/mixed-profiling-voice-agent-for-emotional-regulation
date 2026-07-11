@@ -33,22 +33,42 @@ notification cadence flag a real BLE dropout, so `hrv_analyzer.py` (or manual re
 exclude or flag the affected window rather than silently trusting data spanning an
 undetected gap.
 
-`self._clock` is an injectable callable (defaults to `datetime.now`) so tests can drive
-`notification_handler` deterministically without real sleeps or a BLE connection — see
-`HRV_pipeline/tests/test_read_polarH10.py`.
+`self._clock` is an injectable callable (defaults to `lambda: datetime.now(timezone.utc)`)
+so tests can drive `notification_handler` deterministically without real sleeps or a BLE
+connection — see `HRV_pipeline/tests/test_read_polarH10.py`.
 
-## Deliberately unchanged: still naive local time, not UTC
+## Recorder timestamps are UTC; the experimenter still works in local time
 
-The fix does **not** switch timestamps to UTC, even though the rest of the study
-(oTree's `phase_log`, `vas_stress_timestamp`, etc.) uses `datetime.now(tz=timezone.utc)`.
-`hrv_analyzer.py` / `visualization_runner.py` prompt the experimenter to manually type a
-window start time off a clock in the room (e.g. `"Startzeit ... eingeben (z. B.
-19:40:39)"`), which is local wall-clock time. If the recorder wrote UTC while the
-analyzer's manual-entry path stayed in local time, every manually-typed window would be
-off by the local UTC offset (e.g. 2 hours during CEST) — a worse, silent bug than the one
-this fix addresses. Switching both the recorder and the analyzer's input/UX to UTC
-consistently is a reasonable follow-up, but is a separate, coordinated change (touches
-the experimenter-facing workflow) and is out of scope here.
+`read_polarH10.py` now writes UTC timestamps (`self._clock = lambda: datetime.now(timezone.utc)`),
+aligning directly with the rest of the study — oTree's `phase_log`, `vas_stress_timestamp`,
+and HRV baseline/recovery start/end all use `datetime.now(tz=timezone.utc)`.
+
+The experimenter-facing workflow (`hrv_analyzer.py`'s `baseline_rmssd()` / `rolling_rmssd()`,
+and `visualization_runner.py`'s interactive prompt) is unchanged: window start/end times are
+still typed as local wall-clock time, read off a clock in the room, e.g. `"Startzeit ...
+eingeben (z. B. 19:40:39)"`. `hrv_analyzer.py` handles the translation:
+
+- `LOCAL_TZ = ZoneInfo("Europe/Berlin")` — hardcoded to the study's physical lab location
+  (KIT, Karlsruhe — D16), not the analysis machine's system timezone, so results don't
+  depend on where the CSV happens to get analyzed.
+- `HRVAnalyzer._parse_time()` interprets every typed string as Europe/Berlin local time and
+  converts to UTC (`_to_utc()`) before comparing against the UTC-timestamped `self.df`.
+  Handles both HH:MM:SS-only input (date taken from the CSV's own local calendar date, not
+  its UTC date) and full datetime strings. `zoneinfo` resolves the correct UTC offset for
+  the *specific date* being analyzed (CEST/UTC+2 in summer vs. CET/UTC+1 in winter) — see
+  `HRV_pipeline/tests/test_hrv_analyzer_tz.py`, which exercises both.
+- All console output (`baseline_rmssd`, `rolling_rmssd`, the "CSV geladen" summary) converts
+  back to local time before printing, so what the experimenter sees still matches their own
+  clock, even though the underlying comparison runs in UTC.
+- `hrv_visualization.py` converts `window_end` back to `LOCAL_TZ` before plotting, and pins
+  `mdates.DateFormatter(..., tz=LOCAL_TZ)` explicitly, so the RMSSD chart's x-axis also reads
+  local time.
+
+**Old (pre-fix) CSVs are not compatible with the new loader.** They contain naive *local*
+timestamps (no UTC offset); `_load_csv()` now parses with `utc=True`, which would silently
+treat those naive strings as if they were already UTC — reintroducing exactly the kind of
+offset bug this change fixes. No real recordings exist yet (pre-pilot), so this hasn't come
+up in practice, but any old CSV would need manual conversion before reanalysis.
 
 ## CSV schema change
 

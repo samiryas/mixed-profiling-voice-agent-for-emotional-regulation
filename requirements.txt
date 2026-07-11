@@ -132,3 +132,7 @@ bleak==3.0.2
 pandas==3.0.3
 numpy==2.4.6
 matplotlib==3.11.0
+# zoneinfo (stdlib) needs an IANA tz database; Linux/macOS normally have one, Windows does
+# not -- tzdata provides it as a pure-data fallback. Needed for hrv_analyzer.py's
+# Europe/Berlin local<->UTC conversion.
+tzdata

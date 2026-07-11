@@ -1,7 +1,14 @@
 import pandas as pd
 import numpy as np
 import re
-from datetime import datetime, timedelta
+from datetime import timedelta, timezone
+from zoneinfo import ZoneInfo
+
+# Study runs in a physical lab at KIT (Karlsruhe, Germany) -- D16. The experimenter reads
+# and types wall-clock time off a clock in the room, so all human-facing input/output here
+# is Europe/Berlin local time. Internally, everything is compared in UTC because the
+# recorder (read_polarH10.py) timestamps in UTC to align with oTree's own timestamps.
+LOCAL_TZ = ZoneInfo("Europe/Berlin")
 
 
 class HRVAnalyzer:
@@ -13,27 +20,45 @@ class HRVAnalyzer:
 
     def _load_csv(self):
         self.df = pd.read_csv(self.csv_file)
-        self.df["timestamp"] = pd.to_datetime(self.df["timestamp"])
+        # utc=True: the recorder writes UTC ISO timestamps (e.g. "...+00:00"); this parses
+        # them as UTC-aware. NOTE: CSVs recorded before the UTC switch contain naive LOCAL
+        # time and must not be reloaded here without manually converting them first --
+        # utc=True would otherwise silently misinterpret them as UTC.
+        self.df["timestamp"] = pd.to_datetime(self.df["timestamp"], utc=True)
         self.df = self.df.sort_values("timestamp").reset_index(drop=True)
+        first_local = self.df["timestamp"].iloc[0].tz_convert(LOCAL_TZ)
+        last_local = self.df["timestamp"].iloc[-1].tz_convert(LOCAL_TZ)
         print(f"CSV geladen: {len(self.df)} RR-Werte von "
-              f"{self.df['timestamp'].iloc[0]} bis {self.df['timestamp'].iloc[-1]}")
+              f"{first_local.strftime('%Y-%m-%d %H:%M:%S')} bis {last_local.strftime('%Y-%m-%d %H:%M:%S')} (lokale Zeit)")
 
     # Erkennt reine Uhrzeit-Strings wie "14:32", "14:32:00" oder "14:32:00.500"
     _TIME_ONLY_PATTERN = re.compile(r"^\d{1,2}:\d{2}(:\d{2}(\.\d+)?)?$")
 
     def _parse_time(self, time_str: str) -> pd.Timestamp:
         """
-        Parst einen Zeitstring. Falls nur HH:MM:SS angegeben wird,
+        Parst einen Zeitstring als lokale Uhrzeit (Europe/Berlin) und wandelt ihn zum
+        Vergleich mit self.df["timestamp"] in UTC um. Falls nur HH:MM:SS angegeben wird,
+        wird das Datum aus dem ersten CSV-Zeitstempel (lokal) übernommen.
         """
         time_str = time_str.strip()
 
         if self._TIME_ONLY_PATTERN.match(time_str):
-            # Nur Uhrzeit angegeben → Datum aus den CSV-Daten nehmen
-            date = self.df["timestamp"].iloc[0].date()
-            return pd.to_datetime(f"{date}T{time_str}")
+            # Nur Uhrzeit angegeben → lokales Kalenderdatum aus den CSV-Daten nehmen
+            date = self.df["timestamp"].iloc[0].tz_convert(LOCAL_TZ).date()
+            ts = pd.Timestamp(f"{date}T{time_str}")
+        else:
+            # Vollständiger Datetime-String (enthält Datum)
+            ts = pd.Timestamp(time_str)
 
-        # Vollständiger Datetime-String (enthält Datum)
-        return pd.to_datetime(time_str)
+        return self._to_utc(ts)
+
+    @staticmethod
+    def _to_utc(ts: pd.Timestamp) -> pd.Timestamp:
+        """Interpret a naive Timestamp as Europe/Berlin wall-clock time and convert to UTC;
+        pass an already-tz-aware Timestamp straight through (unambiguous as given)."""
+        if ts.tzinfo is None:
+            ts = ts.tz_localize(LOCAL_TZ)
+        return ts.tz_convert(timezone.utc)
 
 
     def _calculate_rmssd(self, rr_values: list) -> float | None:
@@ -67,8 +92,10 @@ class HRVAnalyzer:
 
         rmssd = self._calculate_rmssd(rr_values)
 
+        start_local = start.tz_convert(LOCAL_TZ)
+        end_local = end.tz_convert(LOCAL_TZ)
         print(f"\n── Baseline ──────────────────────────────────")
-        print(f"   Zeitfenster : {start.strftime('%H:%M:%S')} – {end.strftime('%H:%M:%S')}")
+        print(f"   Zeitfenster : {start_local.strftime('%H:%M:%S')} – {end_local.strftime('%H:%M:%S')} (lokale Zeit)")
         print(f"   RR-Werte    : {len(rr_values)}")
         print(f"   RMSSD       : {rmssd} ms")
         print(f"──────────────────────────────────────────────\n")
@@ -114,7 +141,8 @@ class HRVAnalyzer:
             })
 
             rmssd_str = f"{rmssd} ms" if rmssd is not None else "–– (zu wenig Daten)"
-            print(f"   {current.strftime('%H:%M:%S')} – {window_end.strftime('%H:%M:%S')} | "
+            print(f"   {current.tz_convert(LOCAL_TZ).strftime('%H:%M:%S')} – "
+                  f"{window_end.tz_convert(LOCAL_TZ).strftime('%H:%M:%S')} | "
                   f"RMSSD: {rmssd_str:>10} | n={len(rr_values)}")
 
             current += step

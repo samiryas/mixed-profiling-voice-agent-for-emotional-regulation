@@ -10,7 +10,7 @@ import importlib.util
 import pathlib
 import struct
 import tempfile
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 _MODULE_PATH = pathlib.Path(__file__).resolve().parents[1] / "read_polarH10.py"
 _spec = importlib.util.spec_from_file_location("read_polarH10_under_test", _MODULE_PATH)
@@ -72,7 +72,7 @@ def test_parse_heart_rate_measurement_roundtrips_rr_intervals():
 def test_single_beat_packet_anchors_to_arrival_time(tmp_path):
     csv_path = tmp_path / "hrv.csv"
     rec = _make_recorder(csv_path)
-    clock = _FakeClock(datetime(2026, 7, 11, 14, 0, 0))
+    clock = _FakeClock(datetime(2026, 7, 11, 14, 0, 0, tzinfo=timezone.utc))
     rec._clock = clock
     expected = clock._now
 
@@ -89,7 +89,7 @@ def test_single_beat_packet_anchors_to_arrival_time(tmp_path):
 def test_multi_beat_packet_preserves_within_packet_rr_spacing(tmp_path):
     csv_path = tmp_path / "hrv.csv"
     rec = _make_recorder(csv_path)
-    clock = _FakeClock(datetime(2026, 7, 11, 14, 0, 0))
+    clock = _FakeClock(datetime(2026, 7, 11, 14, 0, 0, tzinfo=timezone.utc))
     rec._clock = clock
     expected = clock._now
 
@@ -112,7 +112,7 @@ def test_gap_does_not_propagate_into_later_timestamps(tmp_path):
     from real wall-clock time, the way the old cumulative-RR-sum anchor did."""
     csv_path = tmp_path / "hrv.csv"
     rec = _make_recorder(csv_path)
-    clock = _FakeClock(datetime(2026, 7, 11, 14, 0, 0))
+    clock = _FakeClock(datetime(2026, 7, 11, 14, 0, 0, tzinfo=timezone.utc))
     rec._clock = clock
 
     # packet 1: one beat, right at t=0
@@ -146,7 +146,7 @@ def test_packet_with_no_rr_intervals_still_updates_gap_tracking(tmp_path):
     or the next real packet's gap_ms would be measured from the wrong reference point."""
     csv_path = tmp_path / "hrv.csv"
     rec = _make_recorder(csv_path)
-    clock = _FakeClock(datetime(2026, 7, 11, 14, 0, 0))
+    clock = _FakeClock(datetime(2026, 7, 11, 14, 0, 0, tzinfo=timezone.utc))
     rec._clock = clock
 
     hr_only_flags = 0x00  # no RR-interval-present bit
@@ -158,6 +158,23 @@ def test_packet_with_no_rr_intervals_still_updates_gap_tracking(tmp_path):
     rows = _read_rows(csv_path)
     assert len(rows) == 1  # only the RR-bearing packet writes a row
     assert abs(float(rows[0]["gap_ms"]) - 1000.0) < 1.0  # gap measured from the HR-only packet
+
+
+def test_timestamps_are_utc(tmp_path):
+    """Beat timestamps must carry a UTC offset, so they align directly with oTree's own
+    datetime.now(timezone.utc)-based timestamps (phase_log, vas_stress_timestamp, ...)."""
+    csv_path = tmp_path / "hrv.csv"
+    rec = _make_recorder(csv_path)
+    rec._clock = _FakeClock(datetime(2026, 7, 11, 14, 0, 0, tzinfo=timezone.utc))
+
+    rec.notification_handler(sender=None, data=_hr_packet(70, [800.0]))
+    rec.csv_file.close()
+
+    rows = _read_rows(csv_path)
+    assert rows[0]["timestamp"].endswith("+00:00")
+    parsed = datetime.fromisoformat(rows[0]["timestamp"])
+    assert parsed.tzinfo is not None
+    assert parsed.utcoffset().total_seconds() == 0
 
 
 def test_csv_header_includes_gap_ms(tmp_path):

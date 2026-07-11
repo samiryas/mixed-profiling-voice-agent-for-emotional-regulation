@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import pandas as pd
-from hrv_analyzer import HRVAnalyzer
+from hrv_analyzer import HRVAnalyzer, LOCAL_TZ
 
 
 class HRVVisualizer:
@@ -23,8 +23,10 @@ class HRVVisualizer:
             step_seconds=step_seconds
         )
 
-        # Nur Fenster mit gültigem RMSSD-Wert plotten (zu wenig Daten -> None wird übersprungen)
-        timestamps = [r["window_end"] for r in results if r["rmssd_ms"] is not None]
+        # Nur Fenster mit gültigem RMSSD-Wert plotten (zu wenig Daten -> None wird übersprungen).
+        # window_end is UTC internally (see hrv_analyzer.py); convert to local for the axis so
+        # the plot reads in the same wall-clock time the experimenter typed as start/end.
+        timestamps = [r["window_end"].tz_convert(LOCAL_TZ) for r in results if r["rmssd_ms"] is not None]
         rmssd_values = [r["rmssd_ms"] for r in results if r["rmssd_ms"] is not None]
 
         if not rmssd_values:
@@ -43,8 +45,9 @@ class HRVVisualizer:
         ax.grid(True)
 
         # Wichtig: Matplotlib zeigt Datetime-Werte sonst manchmal mit Datum/Tag-Offset an.
-        # Dadurch wird auf der Achse nur HH:MM:SS angezeigt.
-        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
+        # Dadurch wird auf der Achse nur HH:MM:SS angezeigt. tz=LOCAL_TZ ist explizit gesetzt,
+        # damit die Achse auch dann lokale Zeit zeigt, wenn Matplotlib intern in UTC rendert.
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S", tz=LOCAL_TZ))
         ax.xaxis.set_major_locator(mdates.AutoDateLocator())
         ax.get_xaxis().get_offset_text().set_visible(False)
         fig.autofmt_xdate()

@@ -1,6 +1,6 @@
 import asyncio
 import csv
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from bleak import BleakScanner, BleakClient
 
 
@@ -24,8 +24,10 @@ class readPolarH10:
         # See docs/hrv_pipeline_clock_drift.md.
         self._last_arrival = None
 
+        # UTC so beat timestamps align directly with oTree's own timestamps (phase_log,
+        # vas_stress_timestamp, HRV baseline/recovery start/end all use datetime.now(utc)).
         # Injectable so tests can control "now" deterministically without real sleeps.
-        self._clock = datetime.now
+        self._clock = lambda: datetime.now(timezone.utc)
 
     async def find_device(self, timeout: int = 10):
         print("Suche nach Polar H10...")
