@@ -18,23 +18,6 @@ from otree.api import *
 from sqlalchemy.inspection import inspect
 
 
-class Demographics(Page):
-    form_model = 'player'
-    form_fields = ['age', 'gender', 'education']
-    ##random.shuffle(form_fields)
-
-    @staticmethod
-    def live_method(player, data):
-        player.timestamp_demographics = data['timestamp_demographics']
-
-class Introduction(Page):
-    form_model = 'player'
-    form_fields = ['age','gender','education']
-
-    @staticmethod
-    def live_method(player, data):
-        player.timestamp_introduction = data['timestamp_introduction']
-
 class BigFive(Page):
     form_model = 'player'
     template_name = f'Introduction/{LANG}/BigFive.html'
