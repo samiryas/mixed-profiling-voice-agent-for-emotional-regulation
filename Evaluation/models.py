@@ -5,7 +5,8 @@ from otree.api import (
 from settings import LANG
 
 doc = """
-    Post-Study Questionnaire (see questionnaire_spec.json for the source instrument).
+    Post-Study Questionnaire. Items adapted from the validated WAI-SR and UEQ+
+    instruments (see field-level comments below for subscale/source detail).
 
     Covers: WAI-SR working-alliance subscales (Goal/Task/Bond), UEQ+ response
     behaviour/quality/usefulness (semantic differential), a researcher-developed
