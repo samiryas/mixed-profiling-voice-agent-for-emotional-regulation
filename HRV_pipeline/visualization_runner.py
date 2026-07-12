@@ -5,8 +5,10 @@ class HRVVisualizationRunner:
     def __init__(self, csv_file: str):
         self.visualizer = HRVVisualizer(csv_file)
 
-    def run_baseline_visualization(self, start_time: str):
-        self.visualizer.plot_baseline_rmssd(start_time)
+    def run_baseline_calculation(self, start_time: str):
+        # Baseline is a single 5-min RMSSD value, not a time series -- nothing to plot.
+        # HRVAnalyzer.baseline_rmssd() already prints the formatted result itself.
+        self.visualizer.analyzer.baseline_rmssd(start_time)
 
     def run_rolling_visualization(
         self,
