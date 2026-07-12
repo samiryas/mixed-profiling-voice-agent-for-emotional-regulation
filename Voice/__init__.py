@@ -120,7 +120,9 @@ class Player(BasePlayer):
     phase_log = models.LongStringField(initial='[]')
     # T3 emotional state tracking (FR13/FR14)
     emotional_state = models.StringField(initial='calm')    # calm | moderate_distress | high_distress
-    sentiment_log   = models.LongStringField(initial='[]')  # [{turn_ts, label, score, state, state_changed}]
+    # [{turn_ts, label, score, pitch_delta, speech_rate_delta, pause_rate_delta,
+    #   acoustics_used, state, state_changed, tts_state, tts_voice_settings}]
+    sentiment_log   = models.LongStringField(initial='[]')
     # HRV④ post-session recovery rest window (D7/D20)
     timestamp_hrv_recovery_start = models.FloatField(initial=0)
     timestamp_hrv_recovery_end = models.FloatField(initial=0)
@@ -482,12 +484,19 @@ class Session(Page):
                     f' (changed from {prev_state})' if state_changed else ' (unchanged)',
                 )
 
-                # log every turn for pilot hand-validation (NFR5 / study design requirement)
+                # log every turn for pilot hand-validation (NFR5 / study design requirement).
+                # Includes the acoustic deltas the classifier actually decided on (and whether
+                # acoustics were available at all) -- previously only visible in the server log,
+                # not queryable from the DB/CSV export where hand-validation actually happens.
                 log = json.loads(player.sentiment_log or '[]')
                 log.append({
                     'turn_ts': now_ts,
                     'label': sentiment['label'],
                     'score': sentiment['score'],
+                    'pitch_delta': deltas['pitch_delta'],
+                    'speech_rate_delta': deltas['speech_rate_delta'],
+                    'pause_rate_delta': deltas['pause_rate_delta'],
+                    'acoustics_used': acoustics_used,
                     'state': new_state,
                     'state_changed': state_changed,
                     'tts_state': player.emotional_state,
