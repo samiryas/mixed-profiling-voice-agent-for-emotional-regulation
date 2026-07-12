@@ -121,9 +121,9 @@ UEQ_USEFUL_FIELDS_EN = [
 ]
 UEQ_USEFUL_FIELDS = UEQ_USEFUL_FIELDS_DE if LANG == 'de' else UEQ_USEFUL_FIELDS_EN
 
-# NOTE: UEQ+ — Comprehensibility ("Verständlichkeit") is status "exclude" in
-# questionnaire_spec.json (STT/voice-recognition diagnostic, not tied to any
-# research question) and is intentionally not implemented here.
+# NOTE: UEQ+ — Comprehensibility ("Verständlichkeit") is intentionally not
+# implemented here: it's an STT/voice-recognition diagnostic, not tied to any
+# research question.
 
 # ---------------------------------------------------------------------------
 # Personalization (manipulation check) — researcher-developed, not a validated
