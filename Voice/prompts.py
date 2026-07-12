@@ -4,9 +4,10 @@ Builds the layered system prompt (persona + AI disclosure -> condition-based pro
 current phase block -> pacing/advance instruction) from the version-controlled templates under
 Voice/prompts/<lang>/, and parses the LLM's {"ready_to_advance": true} readiness flag.
 
-Personalization beyond profile injection (Big Five delivery notes, ERQ DEEPEN/INTRODUCE framing)
-is intentionally left as seams here -- see delivery_notes_from_profile() and erq_framing(). Their
-thresholds are a separate task ("Finalize personalization thresholds", design ref D17).
+Personalization: delivery_notes_from_profile() nudges the LLM to adapt tone/pacing/depth to the
+narrative Big Five profile Mixed Profiling already produces (design ref D17-rev -- qualitative,
+not numeric-threshold-gated). erq_framing() selects DEEPEN/INTRODUCE reappraisal framing from a
+frozen per-participant category (design ref D4-rev, issue #8).
 """
 import re
 from dataclasses import dataclass
@@ -111,12 +112,23 @@ def advance_decision(phase_index: int, turns: int, elapsed_seconds: float, wants
     return False, ""
 
 
-# ----- personalization seams (return neutral defaults for now) -----------------
+# ----- personalization ----------------------------------------------------------
 
-def delivery_notes_from_profile(profile: str) -> str:
-    """SEAM: translate Big Five scores into behavioural delivery notes (design ref D17).
-    TODO(Finalize personalization thresholds): map BFI-10 -> concrete instructions."""
-    return ""
+def delivery_notes_from_profile(condition: str, profile: str) -> str:
+    """Nudge the LLM to adapt delivery style (tone, pacing, depth, examples) to the
+    participant's Big Five profile (design ref D17-rev, supersedes D17's numeric-threshold
+    plan). Mixed Profiling already produces a narrative per-dimension profile (not raw scores),
+    injected into the system prompt as prose -- so the LLM reads qualitative descriptions, not
+    numbers, and this adds one general instruction telling it to actively adapt to what the
+    profile says, rather than pattern-matching threshold-gated behavioural rules per dimension.
+
+    T1 withholds personalization (mirrors erq_framing()'s gating): always neutral regardless of
+    profile. Also neutral if no profile is available yet.
+    """
+    if condition == "T1" or not profile:
+        return ""
+    from utils.promting import renderPrompt
+    return renderPrompt(f"{_prompt_dir()}/delivery_notes.txt", {})
 
 
 def erq_framing(condition: str, erq_category: str | None) -> str:
@@ -181,7 +193,7 @@ def build_system_prompt(
 
     phase_ctx = {
         "framing": erq_framing(condition, erq_category),
-        "delivery_notes": delivery_notes_from_profile(profile),
+        "delivery_notes": delivery_notes_from_profile(condition, profile),
     }
     phase_block = renderPrompt(f"{d}/phase_{phase_name(phase_index)}.txt", phase_ctx)
 

@@ -120,7 +120,9 @@ class Player(BasePlayer):
     phase_log = models.LongStringField(initial='[]')
     # T3 emotional state tracking (FR13/FR14)
     emotional_state = models.StringField(initial='calm')    # calm | moderate_distress | high_distress
-    sentiment_log   = models.LongStringField(initial='[]')  # [{turn_ts, label, score, state, state_changed}]
+    # [{turn_ts, label, score, pitch_delta, speech_rate_delta, pause_rate_delta,
+    #   acoustics_used, state, state_changed, tts_state, tts_voice_settings}]
+    sentiment_log   = models.LongStringField(initial='[]')
     # HRV④ post-session recovery rest window (D7/D20)
     timestamp_hrv_recovery_start = models.FloatField(initial=0)
     timestamp_hrv_recovery_end = models.FloatField(initial=0)
@@ -482,12 +484,19 @@ class Session(Page):
                     f' (changed from {prev_state})' if state_changed else ' (unchanged)',
                 )
 
-                # log every turn for pilot hand-validation (NFR5 / study design requirement)
+                # log every turn for pilot hand-validation (NFR5 / study design requirement).
+                # Includes the acoustic deltas the classifier actually decided on (and whether
+                # acoustics were available at all) -- previously only visible in the server log,
+                # not queryable from the DB/CSV export where hand-validation actually happens.
                 log = json.loads(player.sentiment_log or '[]')
                 log.append({
                     'turn_ts': now_ts,
                     'label': sentiment['label'],
                     'score': sentiment['score'],
+                    'pitch_delta': deltas['pitch_delta'],
+                    'speech_rate_delta': deltas['speech_rate_delta'],
+                    'pause_rate_delta': deltas['pause_rate_delta'],
+                    'acoustics_used': acoustics_used,
                     'state': new_state,
                     'state_changed': state_changed,
                     'tts_state': player.emotional_state,
@@ -564,8 +573,10 @@ class Session(Page):
             # met, but force-advance if a turn/time ceiling is hit so a phase can never hang.
             # log the transition (turns + reason feed engagement metrics); finish after the last.
             elapsed = now_ts - player.current_phase_started
+            turns_this_phase = player.current_phase_turns
+            from_phase = phase_name(player.current_phase)
             advance, reason = advance_decision(
-                player.current_phase, player.current_phase_turns, elapsed, ready_to_advance,
+                player.current_phase, turns_this_phase, elapsed, ready_to_advance,
             )
             if advance and reason == 'flag':
                 # distinguish how readiness was signalled, for pilot hand-validation (#12)
@@ -574,10 +585,10 @@ class Session(Page):
             if advance:
                 log = json.loads(player.phase_log or '[]')
                 log.append({
-                    'phase': phase_name(player.current_phase),
+                    'phase': from_phase,
                     'started_at': player.current_phase_started,
                     'advanced_at': now_ts,
-                    'turns': player.current_phase_turns,
+                    'turns': turns_this_phase,
                     'reason': reason,
                 })
                 player.phase_log = json.dumps(log)
@@ -588,6 +599,24 @@ class Session(Page):
                     player.current_phase_started = now_ts
                     player.current_phase_turns = 0
                     player.phase_just_advanced = True
+
+            # surface every phase-control decision in the server log (pilot monitoring) --
+            # mirrors the T3 sentiment/state logging above so phase advancement is visible
+            # live during a session, not only after the fact via phase_log/CSV export.
+            logger.info(
+                "[Phase %s] phase=%s turn=%d elapsed=%.0fs judge=%s inline_flag=%s -> %s",
+                player.participant.code,
+                from_phase,
+                turns_this_phase,
+                elapsed,
+                judge_met if judge_met is not None else 'n/a',
+                wants_advance,
+                (
+                    'SESSION END' if session_done
+                    else f'ADVANCE to {phase_name(player.current_phase)} ({reason})' if advance
+                    else 'stay'
+                ),
+            )
 
             MessageData.create(
                 player=player, msgId=botMsgId, timestamp=dateNow,

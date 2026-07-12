@@ -5,7 +5,8 @@ from otree.api import (
 from settings import LANG
 
 doc = """
-    Post-Study Questionnaire (see questionnaire_spec.json for the source instrument).
+    Post-Study Questionnaire. Items adapted from the validated WAI-SR and UEQ+
+    instruments (see field-level comments below for subscale/source detail).
 
     Covers: WAI-SR working-alliance subscales (Goal/Task/Bond), UEQ+ response
     behaviour/quality/usefulness (semantic differential), a researcher-developed
@@ -120,9 +121,9 @@ UEQ_USEFUL_FIELDS_EN = [
 ]
 UEQ_USEFUL_FIELDS = UEQ_USEFUL_FIELDS_DE if LANG == 'de' else UEQ_USEFUL_FIELDS_EN
 
-# NOTE: UEQ+ — Comprehensibility ("Verständlichkeit") is status "exclude" in
-# questionnaire_spec.json (STT/voice-recognition diagnostic, not tied to any
-# research question) and is intentionally not implemented here.
+# NOTE: UEQ+ — Comprehensibility ("Verständlichkeit") is intentionally not
+# implemented here: it's an STT/voice-recognition diagnostic, not tied to any
+# research question.
 
 # ---------------------------------------------------------------------------
 # Personalization (manipulation check) — researcher-developed, not a validated

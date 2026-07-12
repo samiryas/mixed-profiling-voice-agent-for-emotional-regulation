@@ -1,6 +1,6 @@
 import asyncio
 import csv
-from datetime import datetime, timedelta  # timedelta neu hinzugefügt
+from datetime import datetime, timedelta, timezone
 from bleak import BleakScanner, BleakClient
 
 
@@ -17,8 +17,17 @@ class readPolarH10:
         self.csv_writer = None
         self.is_recording = False
 
-        self.recording_start_time = None  
-        self.cumulative_ms = 0            
+        # Wall-clock arrival time of the previous BLE notification. Anchoring every packet to
+        # its own real arrival time (instead of summing RR intervals from one fixed
+        # session-start anchor) makes beat timestamps self-correct for clock drift and dropped
+        # notifications, rather than silently accumulating offset for the rest of the session.
+        # See docs/hrv_pipeline_clock_drift.md.
+        self._last_arrival = None
+
+        # UTC so beat timestamps align directly with oTree's own timestamps (phase_log,
+        # vas_stress_timestamp, HRV baseline/recovery start/end all use datetime.now(utc)).
+        # Injectable so tests can control "now" deterministically without real sleeps.
+        self._clock = lambda: datetime.now(timezone.utc)
 
     async def find_device(self, timeout: int = 10):
         print("Suche nach Polar H10...")
@@ -57,12 +66,11 @@ class readPolarH10:
         self.csv_writer.writerow([
             "timestamp",
             "rr_ms",
-            "hr_bpm"
+            "hr_bpm",
+            "gap_ms",
         ])
 
-        self.recording_start_time = datetime.now()  # Neu: Startzeit merken
-        self.cumulative_ms = 0                       # Neu: Zähler zurücksetzen
-
+        self._last_arrival = None
         self.is_recording = True
 
         await self.client.start_notify(
@@ -88,16 +96,36 @@ class readPolarH10:
         if not self.is_recording:
             return
 
+        # Wall-clock arrival time of this packet -- the authoritative time source. Using it
+        # (rather than summing RR intervals from one fixed session-start anchor) means clock
+        # drift and dropped notifications never compound: every packet re-anchors to real time.
+        arrival_time = self._clock()
+        gap_ms = 0.0
+        if self._last_arrival is not None:
+            gap_ms = (arrival_time - self._last_arrival).total_seconds() * 1000
+        self._last_arrival = arrival_time
+
         hr_bpm, rr_intervals_ms = self.parse_heart_rate_measurement(data)
+        if not rr_intervals_ms:
+            return
 
-        for rr_ms in rr_intervals_ms:
-            self.cumulative_ms += rr_ms
-            # Neu: tatsächlichen Zeitpunkt dieses Herzschlags aus den RR-Werten berechnen
-            actual_time = self.recording_start_time + timedelta(milliseconds=self.cumulative_ms)
-            actual_timestamp = actual_time.isoformat(timespec="milliseconds")
+        # RR intervals within one packet are in chronological order (oldest first, per the
+        # Bluetooth HR Measurement spec), and the packet arrives essentially when the last beat
+        # in it completes. Distribute them backwards from arrival_time using their own
+        # (precise, device-measured) spacing -- only the packet's anchor point comes from the
+        # wall clock, so within-packet ordering stays accurate to the millisecond.
+        offsets_before_arrival = []
+        running = 0.0
+        for rr in reversed(rr_intervals_ms):
+            offsets_before_arrival.append(running)
+            running += rr
+        offsets_before_arrival.reverse()
 
-            self.write_rr_to_csv(actual_timestamp, rr_ms, hr_bpm)
-            print(f"{actual_timestamp} | HR: {hr_bpm} | RR: {rr_intervals_ms}")
+        for rr_ms, offset_ms in zip(rr_intervals_ms, offsets_before_arrival):
+            beat_time = arrival_time - timedelta(milliseconds=offset_ms)
+            beat_timestamp = beat_time.isoformat(timespec="milliseconds")
+            self.write_rr_to_csv(beat_timestamp, rr_ms, hr_bpm, round(gap_ms, 1))
+            print(f"{beat_timestamp} | HR: {hr_bpm} | RR: {rr_ms} | gap={gap_ms:.0f}ms")
 
     def parse_heart_rate_measurement(self, data: bytearray):
         flags = data[0]
@@ -130,24 +158,12 @@ class readPolarH10:
 
         return hr_bpm, rr_intervals_ms
 
-    def write_rr_to_csv(self, timestamp: str, rr_ms: float, hr_bpm: int):
+    def write_rr_to_csv(self, timestamp: str, rr_ms: float, hr_bpm: int, gap_ms: float = 0.0):
         self.csv_writer.writerow([
             timestamp,
             rr_ms,
-            hr_bpm
+            hr_bpm,
+            gap_ms,
         ])
         self.csv_file.flush()
-
-
-
-
-
-        
-
-   
-    
-
-        
-        
-        
 
