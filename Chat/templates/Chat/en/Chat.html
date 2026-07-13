@@ -22,20 +22,10 @@
 
     // the first bot question is pre-synthesized and rendered as a static cached message
     // (Chat.vars_for_template), so unlike later turns it has no live 'botText' event to
-    // play its audio on. Browsers block audio.play() before any user gesture, so we defer
-    // it to the participant's first keypress/click instead of autoplaying on load.
-    let pendingFirstAudio = {{ first_bot_audio_path_json|safe }} || null;
-
-    function playPendingFirstAudio() {
-        if (!pendingFirstAudio) return;
-        const path = pendingFirstAudio;
-        pendingFirstAudio = null;
-        const soundIcon = document.getElementById('soundIcon');
-        const audio = new Audio(getAudioUrl(path));
-        audio.addEventListener('play', () => { soundIcon.style.color = '#38A1F3'; });
-        audio.addEventListener('ended', () => { soundIcon.style.color = '#abaaaa'; });
-        audio.play().catch(e => console.error('Play error:', e));
-    }
+    // play its audio on. We attempt it on load same as later turns; spacebar is the
+    // record-answer control, so it must not be hijacked to unlock this one playback.
+    // If the browser's autoplay policy blocks it, it fails silently (text is still shown).
+    const firstBotAudioPath = {{ first_bot_audio_path_json|safe }} || null;
 
     document.addEventListener('DOMContentLoaded', function () {
         form = document.getElementById('form');
@@ -45,9 +35,16 @@
 
         // spacebar toggles recording; stop it from scrolling the page
         window.addEventListener('keydown', function (e) {
-            if (e.code === 'Space' || e.keyCode === 32) { e.preventDefault(); playPendingFirstAudio(); return false; }
+            if (e.code === 'Space' || e.keyCode === 32) { e.preventDefault(); return false; }
         });
-        window.addEventListener('pointerdown', playPendingFirstAudio, { once: true });
+
+        if (firstBotAudioPath) {
+            const soundIcon = document.getElementById('soundIcon');
+            const audio = new Audio(getAudioUrl(firstBotAudioPath));
+            audio.addEventListener('play', () => { soundIcon.style.color = '#38A1F3'; });
+            audio.addEventListener('ended', () => { soundIcon.style.color = '#abaaaa'; });
+            audio.play().catch(e => console.warn('First-question autoplay blocked:', e));
+        }
 
         // open the live channel (replays any cached messages)
         liveSend({});
