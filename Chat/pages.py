@@ -56,9 +56,22 @@ class Chat(Page):
     def vars_for_template(self):
         self._ensure_cached_messages(self.player)
         cached_messages = json.loads(self.player.cachedMessages or '[]')
+
+        # only offer the pre-synthesized audio for the very first question (system +
+        # one assistant message, nothing answered yet); once the interview has
+        # progressed, cached_messages is just a transcript replay, not a fresh open.
+        first_bot_audio_path = ''
+        if (
+            len(cached_messages) == 2
+            and cached_messages[0].get('role') == 'system'
+            and cached_messages[1].get('role') == 'assistant'
+        ):
+            first_bot_audio_path = cached_messages[1].get('audioPath') or ''
+
         return {
             'cached_messages': cached_messages,
             'dev_skip_chat': environ.get('VOICE_DEV_SKIP_CHAT') == '1',
+            'first_bot_audio_path_json': json.dumps(first_bot_audio_path),
         }
     
     # live method functions (async)

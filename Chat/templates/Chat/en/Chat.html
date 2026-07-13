@@ -20,6 +20,23 @@
     let chatMessages;
     let form;
 
+    // the first bot question is pre-synthesized and rendered as a static cached message
+    // (Chat.vars_for_template), so unlike later turns it has no live 'botText' event to
+    // play its audio on. Browsers block audio.play() before any user gesture, so we defer
+    // it to the participant's first keypress/click instead of autoplaying on load.
+    let pendingFirstAudio = {{ first_bot_audio_path_json|safe }} || null;
+
+    function playPendingFirstAudio() {
+        if (!pendingFirstAudio) return;
+        const path = pendingFirstAudio;
+        pendingFirstAudio = null;
+        const soundIcon = document.getElementById('soundIcon');
+        const audio = new Audio(getAudioUrl(path));
+        audio.addEventListener('play', () => { soundIcon.style.color = '#38A1F3'; });
+        audio.addEventListener('ended', () => { soundIcon.style.color = '#abaaaa'; });
+        audio.play().catch(e => console.error('Play error:', e));
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         form = document.getElementById('form');
         chatMessages = document.getElementById('chatMessages');
@@ -28,8 +45,9 @@
 
         // spacebar toggles recording; stop it from scrolling the page
         window.addEventListener('keydown', function (e) {
-            if (e.code === 'Space' || e.keyCode === 32) { e.preventDefault(); return false; }
+            if (e.code === 'Space' || e.keyCode === 32) { e.preventDefault(); playPendingFirstAudio(); return false; }
         });
+        window.addEventListener('pointerdown', playPendingFirstAudio, { once: true });
 
         // open the live channel (replays any cached messages)
         liveSend({});
