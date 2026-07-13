@@ -9,7 +9,8 @@ Outputs, under --out:
     participants_master.csv     one row per participant: condition, scale scores,
                                 engagement, per-segment HRV + deltas vs baseline
     hrv_segments_long.csv       participant x segment HRV metrics (tidy long)
-    hrv_rolling_<code>.csv      rolling RMSSD series per participant
+    hrv_rolling_1min_<code>.csv rolling RMSSD series per participant, 1-min window
+    hrv_rolling_5min_<code>.csv rolling RMSSD series per participant, 5-min window
     figures/                    all PNGs
     report_<code>.html          per-participant report (self-contained)
     cohort_report.html          condition comparison + descriptives
@@ -34,8 +35,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--hrv-dir", default=None, help="directory of participant_<code>_hrv_raw.csv files")
     ap.add_argument("--voice-export", default=None, help="Voice app custom_export CSV (optional)")
     ap.add_argument("--out", default="results", help="output directory (default: results/)")
-    ap.add_argument("--rolling-window", type=float, default=60.0, help="rolling RMSSD window seconds")
-    ap.add_argument("--rolling-step", type=float, default=15.0, help="rolling RMSSD step seconds")
+    ap.add_argument("--rolling-1min-step", type=float, default=15.0,
+                     help="step size in seconds for the 1-min rolling RMSSD window")
+    ap.add_argument("--rolling-5min-step", type=float, default=60.0,
+                     help="step size in seconds for the 5-min rolling RMSSD window")
     args = ap.parse_args(argv)
 
     out = Path(args.out)
@@ -57,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
         code = rec.participant_code
         res = analyze_participant(
             rec, hrv_files.get(code),
-            rolling_window_s=args.rolling_window, rolling_step_s=args.rolling_step,
+            rolling_1min_step_s=args.rolling_1min_step, rolling_5min_step_s=args.rolling_5min_step,
         )
 
         made_timeline = plot_session_timeline(res, str(fig_dir / f"{code}_timeline.png"))
@@ -75,8 +78,10 @@ def main(argv: list[str] | None = None) -> int:
 
         if len(res.segment_metrics):
             seg_frames.append(res.segment_metrics)
-        if len(res.rolling):
-            res.rolling.to_csv(out / f"hrv_rolling_{code}.csv", index=False)
+        if len(res.rolling_1min):
+            res.rolling_1min.to_csv(out / f"hrv_rolling_1min_{code}.csv", index=False)
+        if len(res.rolling_5min):
+            res.rolling_5min.to_csv(out / f"hrv_rolling_5min_{code}.csv", index=False)
 
         print(f"  {code}: condition={rec.condition or '—'} hrv={'yes' if code in hrv_files else 'no'} "
               f"timeline_fig={'yes' if made_timeline else 'no'} segment_fig={'yes' if made_segments else 'no'}")

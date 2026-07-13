@@ -24,7 +24,11 @@ class ParticipantResult:
     events: list[Event]
     hrv_df: pd.DataFrame | None = None  # cleaned RR series (clean_rr output)
     segment_metrics: pd.DataFrame = field(default_factory=pd.DataFrame)
-    rolling: pd.DataFrame = field(default_factory=pd.DataFrame)
+    # two standard rolling-RMSSD views: a 1-min window (responsive to fast changes,
+    # e.g. within a short phase) and a 5-min window (the HRV Task Force's conventional
+    # segment length, less noisy but slower to reflect a transition).
+    rolling_1min: pd.DataFrame = field(default_factory=pd.DataFrame)
+    rolling_5min: pd.DataFrame = field(default_factory=pd.DataFrame)
 
     @property
     def code(self) -> str:
@@ -54,8 +58,8 @@ def _deltas(seg_df: pd.DataFrame) -> dict:
 def analyze_participant(
     rec: ParticipantRecord,
     hrv_path: Path | None,
-    rolling_window_s: float = 60.0,
-    rolling_step_s: float = 15.0,
+    rolling_1min_step_s: float = 15.0,
+    rolling_5min_step_s: float = 60.0,
 ) -> ParticipantResult:
     scores = score_participant(rec)
     engagement = engagement_from_record(rec)
@@ -88,12 +92,12 @@ def analyze_participant(
         result.segment_metrics = pd.DataFrame(rows)
 
         if not clean.empty:
-            result.rolling = hrv_mod.rolling_rmssd(
-                clean,
-                clean["timestamp"].iloc[0],
-                clean["timestamp"].iloc[-1],
-                window_s=rolling_window_s,
-                step_s=rolling_step_s,
+            start, end = clean["timestamp"].iloc[0], clean["timestamp"].iloc[-1]
+            result.rolling_1min = hrv_mod.rolling_rmssd(
+                clean, start, end, window_s=60.0, step_s=rolling_1min_step_s,
+            )
+            result.rolling_5min = hrv_mod.rolling_rmssd(
+                clean, start, end, window_s=300.0, step_s=rolling_5min_step_s,
             )
 
     return result
