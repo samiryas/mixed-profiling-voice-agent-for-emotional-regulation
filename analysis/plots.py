@@ -68,13 +68,15 @@ def _style_axis(ax):
 
 
 def plot_session_timeline(res: ParticipantResult, out_path: str) -> bool:
-    """Rolling RMSSD + heart rate over the whole recording, with the reconstructed
-    session segments as labelled background bands and the VAS rating marked.
-    Two stacked panels share the time axis (one value axis each)."""
-    if res.hrv_df is None or res.rolling.empty:
+    """Rolling RMSSD (1-min and 5-min windows) + heart rate over the whole recording,
+    with the reconstructed session segments as labelled background bands and the VAS
+    rating marked. Two stacked panels share the time axis (one value axis each); the
+    two RMSSD windows share the RMSSD panel's single axis (same measure, same unit)."""
+    if res.hrv_df is None or res.rolling_1min.empty:
         return False
 
-    roll = res.rolling.dropna(subset=["rmssd_ms"])
+    roll_1 = res.rolling_1min.dropna(subset=["rmssd_ms"])
+    roll_5 = res.rolling_5min.dropna(subset=["rmssd_ms"])
     hrv = res.hrv_df[~res.hrv_df["artifact"]]
 
     fig, (ax1, ax2) = plt.subplots(
@@ -82,9 +84,13 @@ def plot_session_timeline(res: ParticipantResult, out_path: str) -> bool:
         facecolor=SURFACE, constrained_layout=True,
     )
 
-    t_roll = roll["window_end"].dt.tz_convert(LOCAL_TZ)
-    ax1.plot(t_roll, roll["rmssd_ms"], color=SERIES[0], linewidth=2, zorder=3)
-    ax1.set_ylabel("RMSSD (ms), 60 s window", color=INK_2, fontsize=10)
+    ax1.plot(roll_1["window_end"].dt.tz_convert(LOCAL_TZ), roll_1["rmssd_ms"],
+             color=SERIES[0], linewidth=1.3, alpha=0.65, zorder=2, label="1-min window")
+    if len(roll_5):
+        ax1.plot(roll_5["window_end"].dt.tz_convert(LOCAL_TZ), roll_5["rmssd_ms"],
+                 color=SERIES[3], linewidth=2.2, zorder=3, label="5-min window")
+    ax1.set_ylabel("RMSSD (ms)", color=INK_2, fontsize=10)
+    ax1.legend(loc="upper right", frameon=False, fontsize=9, labelcolor=INK_2)
 
     t_hr = hrv["timestamp"].dt.tz_convert(LOCAL_TZ)
     ax2.plot(t_hr, hrv["hr_bpm"], color=SERIES[4], linewidth=1.2, zorder=3)

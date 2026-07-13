@@ -26,7 +26,8 @@ python -m analysis --wide data/all_apps_wide_20260713.csv \
 ```
 
 Optional: `--voice-export Voice.csv` (adds response-latency aggregates),
-`--rolling-window` / `--rolling-step` (rolling RMSSD parameters, default 60 s / 15 s).
+`--rolling-1min-step` / `--rolling-5min-step` (step size in seconds for each rolling
+RMSSD window; the windows themselves are fixed at 1 min and 5 min — see below).
 
 Keep raw study data out of git: `data/` and `results/` are git-ignored — put exports
 there.
@@ -37,7 +38,8 @@ there.
 |---|---|
 | `participants_master.csv` | one row per participant: condition, every scale score, engagement metrics, per-segment RMSSD/HR/artifact-%, deltas vs baseline |
 | `hrv_segments_long.csv` | tidy long table: participant × segment × HRV metrics — the stats-software input for physiological analyses |
-| `hrv_rolling_<code>.csv` | rolling RMSSD/HR time series per participant |
+| `hrv_rolling_1min_<code>.csv` | rolling RMSSD/HR time series, 1-min window (responsive to short-phase changes) |
+| `hrv_rolling_5min_<code>.csv` | rolling RMSSD/HR time series, 5-min window (the HRV Task Force's conventional segment length; smoother, slower to reflect a transition) |
 | `report_<code>.html` | self-contained per-participant report (figures embedded) |
 | `cohort_report.html` | condition descriptives + comparison figure |
 | `figures/*.png` | all figures separately, for the paper |
