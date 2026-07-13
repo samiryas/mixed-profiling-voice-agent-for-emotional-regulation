@@ -5,12 +5,15 @@ import logging
 import os
 import random
 import threading
+from datetime import datetime, timezone
 from otree.api import Currency as c, currency_range
 
 from settings import LANG, HRV_REST_SECONDS, hrv_rest_duration_label
 from utils.ai import runGPT, runGPTModel
 from utils.live_prompts import live_prompt
 from utils.promting import renderPrompt
+from Voice.services import synthesize
+from Chat.pages import VOICE_ID, _save_audio
 from . import models
 
 from .models import BIG5_CHOICES, BIG5_FIELDS, ERQ_CHOICES, ERQ_FIELDS, Constants, Player, Profile
@@ -215,7 +218,20 @@ class Processing(Page):
         )
         question_1 = await runGPT(messages_interview)
         logging.info("Generated Question")
-        cachedMessages.append({'role':'assistant', 'content': question_1})
+
+        # synthesize the spoken first question up front so it is not silent when the
+        # Chat page renders it as a pre-cached (static) message, unlike later turns which
+        # are TTS'd live via Chat.live_method's 'botMsg' branch.
+        audioPath = ''
+        try:
+            audio = await synthesize(question_1, voice_id=VOICE_ID)
+            if audio:
+                stamp = str(datetime.now(tz=timezone.utc).timestamp())
+                audioPath = _save_audio(f'{player.session.code}_Q1-{stamp}.mp3', audio)
+        except Exception:
+            logging.exception('TTS failed for first interview question (continuing text-only)')
+
+        cachedMessages.append({'role': 'assistant', 'content': question_1, 'audioPath': audioPath})
         return messages, cachedMessages, profile
 
     @staticmethod
