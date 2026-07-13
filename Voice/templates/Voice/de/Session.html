@@ -16,6 +16,7 @@
     function finishSession() {
         if (sessionEnded) return;
         sessionEnded = true;
+        cancelIdleNudge();
         const form = document.querySelector('form');
         if (form) form.submit();
     }
@@ -45,6 +46,28 @@
     let agentAudioEndedAt = null;
     let recordingStartedAt = null;
 
+    // Sackgassen-Schutz: Phasen-Obergrenzen werden nur bei Bot-Zügen ausgewertet, und Bot-Züge
+    // entstehen nur nach Sprache der teilnehmenden Person — wer verstummt (z. B. weil der Agent
+    // sich verabschiedet anhört), würde die Sitzung für immer anhalten. Startet innerhalb von
+    // IDLE_NUDGE_MS nach einem Bot-Zug keine Aufnahme, wird trotzdem ein Bot-Zug angefordert,
+    // damit die Zug-/Zeit-Obergrenzen greifen und die Sitzung immer endet.
+    const IDLE_NUDGE_MS = 45000;
+    let idleNudgeTimer = null;
+
+    function cancelIdleNudge() {
+        if (idleNudgeTimer !== null) { clearTimeout(idleNudgeTimer); idleNudgeTimer = null; }
+    }
+
+    function armIdleNudge() {
+        cancelIdleNudge();
+        if (sessionEnded) return;
+        idleNudgeTimer = setTimeout(() => {
+            idleNudgeTimer = null;
+            if (sessionEnded || isRecording || awaitingVas) return;
+            liveSend({ 'event': 'botMsg' });
+        }, IDLE_NUDGE_MS);
+    }
+
     function toggleRecording(event) {
         if (sessionEnded || awaitingVas) return;
         if (event.keyCode === spacebarKey && !event.repeat) {
@@ -52,6 +75,7 @@
             event.stopPropagation();
             if (!isRecording) {
                 isRecording = true;
+                cancelIdleNudge();   // die Person antwortet; kein Anstoß nötig
                 recordingStartedAt = Date.now();
                 audioChunks = [];
                 audioRecorder.start();
@@ -120,6 +144,7 @@
             if (!awaitingVas && !document.getElementById('vasBox')) showVasUI();
 
         } else if (event === 'botText') {
+            cancelIdleNudge();   // ein Bot-Zug kommt an; nach dessen Ende neu gestartet
             const typingId = 'typing-' + Date.now();
             chatMessages.insertAdjacentHTML('beforeend', `
                 <div class="message botMsg typing" id="${typingId}">
@@ -144,16 +169,16 @@
                     audio.addEventListener('ended', () => {
                         soundIcon.style.color = '#abaaaa';
                         agentAudioEndedAt = Date.now();   // Latenz-Uhr startet (#12)
-                        if (data.sessionDone) finishSession();
+                        if (data.sessionDone) finishSession(); else armIdleNudge();
                     });
                     audio.play().catch(e => {
                         console.error('Play error:', e);
                         agentAudioEndedAt = Date.now();   // keine Wiedergabe -> ab Anzeige
-                        if (data.sessionDone) finishSession();
+                        if (data.sessionDone) finishSession(); else armIdleNudge();
                     });
                 } else {
                     agentAudioEndedAt = Date.now();       // reine Textantwort -> ab Anzeige
-                    if (data.sessionDone) setTimeout(finishSession, 1500);
+                    if (data.sessionDone) setTimeout(finishSession, 1500); else armIdleNudge();
                 }
             }, 1200);
         }

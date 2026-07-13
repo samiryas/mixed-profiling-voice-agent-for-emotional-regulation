@@ -17,6 +17,7 @@
     function finishSession() {
         if (sessionEnded) return;
         sessionEnded = true;
+        cancelIdleNudge();
         const form = document.querySelector('form');
         if (form) form.submit();
     }
@@ -46,6 +47,28 @@
     let agentAudioEndedAt = null;
     let recordingStartedAt = null;
 
+    // Dead-end guard: phase ceilings are only evaluated on bot turns, and bot turns only fire
+    // after participant speech — so a participant who goes silent (e.g. after the agent sounds
+    // like it is closing) would hang the session forever. If no recording starts within
+    // IDLE_NUDGE_MS of a bot turn finishing, request a bot turn anyway so the turn/time
+    // ceilings can fire and the session always ends.
+    const IDLE_NUDGE_MS = 45000;
+    let idleNudgeTimer = null;
+
+    function cancelIdleNudge() {
+        if (idleNudgeTimer !== null) { clearTimeout(idleNudgeTimer); idleNudgeTimer = null; }
+    }
+
+    function armIdleNudge() {
+        cancelIdleNudge();
+        if (sessionEnded) return;
+        idleNudgeTimer = setTimeout(() => {
+            idleNudgeTimer = null;
+            if (sessionEnded || isRecording || awaitingVas) return;
+            liveSend({ 'event': 'botMsg' });
+        }, IDLE_NUDGE_MS);
+    }
+
     function toggleRecording(event) {
         if (sessionEnded || awaitingVas) return;
         if (event.keyCode === spacebarKey && !event.repeat) {
@@ -53,6 +76,7 @@
             event.stopPropagation();
             if (!isRecording) {
                 isRecording = true;
+                cancelIdleNudge();   // participant is responding; no nudge needed
                 recordingStartedAt = Date.now();
                 audioChunks = [];
                 audioRecorder.start();
@@ -121,6 +145,7 @@
             if (!awaitingVas && !document.getElementById('vasBox')) showVasUI();
 
         } else if (event === 'botText') {
+            cancelIdleNudge();   // a bot turn is arriving; re-armed once it finishes playing
             const typingId = 'typing-' + Date.now();
             chatMessages.insertAdjacentHTML('beforeend', `
                 <div class="message botMsg typing" id="${typingId}">
@@ -145,16 +170,16 @@
                     audio.addEventListener('ended', () => {
                         soundIcon.style.color = '#abaaaa';
                         agentAudioEndedAt = Date.now();   // latency clock starts (#12)
-                        if (data.sessionDone) finishSession();
+                        if (data.sessionDone) finishSession(); else armIdleNudge();
                     });
                     audio.play().catch(e => {
                         console.error('Play error:', e);
                         agentAudioEndedAt = Date.now();   // no playback -> start from render
-                        if (data.sessionDone) finishSession();
+                        if (data.sessionDone) finishSession(); else armIdleNudge();
                     });
                 } else {
                     agentAudioEndedAt = Date.now();       // text-only reply: start from render
-                    if (data.sessionDone) setTimeout(finishSession, 1500);
+                    if (data.sessionDone) setTimeout(finishSession, 1500); else armIdleNudge();
                 }
             }, 1200);
         }

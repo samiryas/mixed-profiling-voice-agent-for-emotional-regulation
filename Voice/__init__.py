@@ -565,9 +565,12 @@ class Session(Page):
             except Exception:
                 logger.exception('TTS failed (continuing text-only)')
 
-            # collect the judge verdict (was running during TTS); None -> use the inline flag.
+            # collect the judge verdict (was running during TTS). Readiness fires if EITHER
+            # signal does: the judge's verdict OR the coach's own inline flag. A stricter judge
+            # must not veto the coach's delivered closing — that stranded a session in reflection
+            # after the coach said goodbye (dead-end found in pilot); min_turns still gates both.
             judge_met = await judge_task
-            ready_to_advance = wants_advance if judge_met is None else judge_met
+            ready_to_advance = bool(judge_met) or wants_advance
 
             # turn-gated advancement with a hard ceiling: honour readiness once the turn floor is
             # met, but force-advance if a turn/time ceiling is hit so a phase can never hang.
@@ -579,8 +582,8 @@ class Session(Page):
                 player.current_phase, turns_this_phase, elapsed, ready_to_advance,
             )
             if advance and reason == 'flag':
-                # distinguish how readiness was signalled, for pilot hand-validation (#12)
-                reason = 'judge' if judge_met is not None else 'flag'
+                # distinguish which signal fired, for pilot hand-validation (#12)
+                reason = 'judge' if judge_met else 'flag'
             session_done = False
             if advance:
                 log = json.loads(player.phase_log or '[]')
