@@ -145,6 +145,20 @@ is available under `/admin` once the server is running.
 
 ------------------------------------------------------------------------
 
+## Data Analysis Pipeline
+
+The `analysis/` package turns the study exports (oTree `all_apps_wide` CSV +
+per-participant HRV recordings) into scored questionnaires, an automatically
+segmented HRV analysis aligned to the session's own timestamps, engagement
+metrics, per-participant HTML reports, and cohort-level (T1/T2/T3) comparison
+tables — see `docs/analysis_pipeline.md`.
+
+    python -m analysis --wide data/all_apps_wide.csv --hrv-dir data/hrv --out results
+
+`data/` and `results/` are git-ignored: participant data never enters the repo.
+
+------------------------------------------------------------------------
+
 ## Credits
 
 This implementation builds upon and was inspired by:

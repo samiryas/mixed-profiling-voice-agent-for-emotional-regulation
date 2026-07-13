@@ -23,3 +23,7 @@ docker-compose.override.yaml
 # Voice session audio (keep the dir, ignore the recordings)
 _static/Voice/recordings/*
 !_static/Voice/recordings/.gitkeep
+
+# Study data and analysis outputs (never commit participant data)
+data/
+results/
