@@ -29,6 +29,12 @@ class Player(BasePlayer):
     profile_interview = models.LongStringField(initial='')
     profilingMessages_interview = models.LongStringField(initial='[]')
 
+    # server-side UTC epochs marking the interview's actual start/end, so the
+    # analysis pipeline can segment it exactly instead of approximating it from
+    # neighboring apps' timestamps (see docs/analysis_pipeline.md).
+    timestamp_interview_start = models.FloatField(initial=0)
+    timestamp_interview_end = models.FloatField(initial=0)
+
 class MessageData(ExtraModel):
     player = models.Link(Player)
     # msg info

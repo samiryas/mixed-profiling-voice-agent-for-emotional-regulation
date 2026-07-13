@@ -80,6 +80,10 @@ class Chat(Page):
         Chat._ensure_cached_messages(player)
         # if no new data, just return cached messages
         if not data:
+            # first time this participant's Chat page opens its live channel; guarded so a
+            # reconnect/reload mid-interview doesn't push the start forward (#timestamps)
+            if not player.timestamp_interview_start:
+                player.timestamp_interview_start = datetime.now(tz=timezone.utc).timestamp()
             yield {player.id_in_group: dict(
                 messages=json.loads(player.cachedMessages or '[]'),
             )}
@@ -147,6 +151,8 @@ class Chat(Page):
 
                 # one question per dimension: 5 Big Five + reappraisal + suppression = 7
                 if assistant_count >= 7:
+                    if not player.timestamp_interview_end:
+                        player.timestamp_interview_end = datetime.now(tz=timezone.utc).timestamp()
                     yield {player.id_in_group: 'done' }
                     return
                 # grab bot info
