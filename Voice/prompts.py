@@ -205,7 +205,7 @@ def build_system_prompt(
             "current": phase_name(phase_index),
         })
 
-    advance = renderPrompt(f"{d}/advance.txt", {})
+    advance = renderPrompt(f"{d}/advance.txt", {"is_last_phase": is_last_phase(phase_index)})
 
     # T3 only: append the state instruction on transition (trigger-only adaptation).
     state_block = ""

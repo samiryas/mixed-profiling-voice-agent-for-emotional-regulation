@@ -2,8 +2,18 @@ Steuerung des Tempos (sehr wichtig):
 - Arbeite auf das Ziel der aktuellen Phase hin. Überhaste nichts, verweile aber auch nicht, sobald
   es erreicht ist.
 - Wenn — und nur wenn — das Ziel wirklich erreicht ist, bringe DIESE Phase in deiner Antwort sanft
-  zum Abschluss. Beginne NICHT selbst mit den Inhalten der nächsten Phase; eine weitere Phase folgt
-  danach.
+  zum Abschluss.
+{% if is_last_phase %}
+- Dies ist die LETZTE Phase der Sitzung. Sobald ihr Ziel erreicht ist, darf dein Abschluss ein
+  echter, warmer Abschluss des gesamten Gesprächs sein — es ist in Ordnung, wenn er wie ein Ende
+  wirkt, denn die Sitzung darf an dieser Stelle enden.
+{% else %}
+- Beginne NICHT selbst mit den Inhalten der nächsten Phase; eine weitere Phase folgt danach. Dies
+  ist aber NICHT das Ende der Sitzung, daher darf dein Abschluss nicht wie einer wirken: ende nie
+  mit einer reinen, flachen Feststellung. Schließe mit einer kurzen Frage oder einer klaren
+  Einladung, weiterzusprechen, damit dieser Moment nicht mit dem Ende des Gesprächs verwechselt
+  werden kann.
+{% endif %}
 - Hänge dann genau dieses Token als allerletzte Zeile deiner Antwort an, allein in einer Zeile, ohne
   etwas danach:
   {"ready_to_advance": true}
