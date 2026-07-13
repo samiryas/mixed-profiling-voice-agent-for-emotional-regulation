@@ -8,6 +8,8 @@ from . import fixtures
 from .fixtures import (
     BASELINE_END,
     BASELINE_START,
+    INTERVIEW_END,
+    INTERVIEW_START,
     PHASE_DUR,
     RECOVERY_END,
     RECOVERY_START,
@@ -55,13 +57,31 @@ def test_timeline_segments(tmp_path):
     vs = by_name["voice_session"]
     assert vs.start == _utc(VOICE_START) and vs.end == _utc(RECOVERY_START)
 
-    # interview marker sits between intro and voice, flagged inferred
-    assert by_name["profiling_interview"].inferred
+    # interview span comes from Chat's own timestamps -- exact, not inferred
+    interview = by_name["profiling_interview"]
+    assert interview.start == _utc(INTERVIEW_START)
+    assert interview.end == _utc(INTERVIEW_END)
+    assert not interview.inferred
 
     names = [e.name for e in events]
     assert "vas_stress" in names and "evaluation_submitted" in names
     vas = next(e for e in events if e.name == "vas_stress")
     assert vas.meta["value"] == 4
+
+
+def test_interview_falls_back_to_approximation_when_untimestamped(tmp_path):
+    # older exports predate Chat.timestamp_interview_start/_end -- pipeline must
+    # still produce a (coarser, inferred) interview segment rather than dropping it
+    rec = load_single(tmp_path, {
+        "Chat.1.player.timestamp_interview_start": "0",
+        "Chat.1.player.timestamp_interview_end": "0",
+    })
+    segments, _ = build_timeline(rec)
+    by_name = {s.name: s for s in segments}
+    interview = by_name["profiling_interview"]
+    assert interview.inferred
+    assert interview.start == _utc(fixtures.ERQ_AT)
+    assert interview.end == _utc(VOICE_START)
 
 
 def test_dropout_without_recovery_still_builds(tmp_path):

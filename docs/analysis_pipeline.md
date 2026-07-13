@@ -56,8 +56,10 @@ HRV recorder also stamps UTC, which is what makes automatic alignment sound; see
   `inferred` in every output.
 - **voice_session** — first phase start → `timestamp_hrv_recovery_start`.
 - **hrv_recovery** — `Voice.timestamp_hrv_recovery_start/_end`.
-- **profiling_interview** — approximate (the Chat app logs no page timestamps):
-  last Introduction activity → Voice start; always flagged inferred.
+- **profiling_interview** — `Chat.timestamp_interview_start/_end` (server-side UTC,
+  set on the participant's first live-channel open and on reaching the 7th
+  question). Exports collected before this field existed fall back to an
+  approximation (last Introduction activity → Voice start), flagged `inferred`.
 - Point events: questionnaire submits, calibration, **VAS stress** (with value),
   every voice turn (timestamps parsed out of `msgId`).
 

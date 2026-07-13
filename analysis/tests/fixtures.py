@@ -20,7 +20,9 @@ BASELINE_END = BASELINE_START + 300
 CALIBRATION_AT = BASELINE_END + 5
 BIGFIVE_AT = CALIBRATION_AT + 70
 ERQ_AT = BIGFIVE_AT + 45
-VOICE_START = ERQ_AT + 500  # interview happens in between
+INTERVIEW_START = ERQ_AT + 20
+INTERVIEW_END = INTERVIEW_START + 400
+VOICE_START = ERQ_AT + 500  # interview happens somewhere in [ERQ_AT, VOICE_START]
 PHASE_DUR = 120.0
 VAS_AT = VOICE_START + 50
 RECOVERY_START = VOICE_START + 4 * PHASE_DUR + 10
@@ -66,6 +68,9 @@ def wide_row(code: str = "abc123", condition: str = "T2") -> dict:
         "Introduction.1.player.timestamp_calibration": str(CALIBRATION_AT),
         "Introduction.1.player.timestamp_bigfive": str(BIGFIVE_AT),
         "Introduction.1.player.timestamp_erq": str(ERQ_AT),
+        # Chat (interview)
+        "Chat.1.player.timestamp_interview_start": str(INTERVIEW_START),
+        "Chat.1.player.timestamp_interview_end": str(INTERVIEW_END),
         # BFI-10: all items 4 -> reversed items become 2 -> every trait mean 3.0
         **{f"Introduction.1.player.b5_{i}": "4" for i in range(10)},
         # ERQ: reappraisal items 6, suppression items 2

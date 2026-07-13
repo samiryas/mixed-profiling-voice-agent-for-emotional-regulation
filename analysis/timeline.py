@@ -127,10 +127,14 @@ def build_timeline(rec: ParticipantRecord) -> tuple[list[Segment], list[Event]]:
             )
         )
 
-    # interview span: between the last Introduction activity and the Voice session.
-    # The Chat app records no page timestamps, so both bounds are borrowed; only
-    # useful as a coarse marker and clearly labelled inferred.
-    if intro_epochs and voice_start:
+    # interview span. Chat.timestamp_interview_start/_end (added after issue #timestamps)
+    # give this exactly, like every other segment; older exports predating that change
+    # fall back to a coarse approximation borrowed from the neighboring apps' timestamps.
+    interview_start = _utc(rec.float_field("Chat", "timestamp_interview_start"))
+    interview_end = _utc(rec.float_field("Chat", "timestamp_interview_end"))
+    if interview_start and interview_end and interview_end > interview_start:
+        segments.append(Segment("profiling_interview", interview_start, interview_end))
+    elif intro_epochs and voice_start:
         intro_last = max(intro_epochs)
         if voice_start > intro_last:
             segments.append(Segment("profiling_interview", intro_last, voice_start, inferred=True))
