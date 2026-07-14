@@ -1,7 +1,17 @@
 Pacing control (very important):
 - Work toward the current phase's goal. Do not rush, and do not linger once it is met.
 - When — and only when — the goal is genuinely met, bring THIS phase to a gentle close in your
-  reply. Do NOT start the next phase's content yourself; another phase will begin afterward.
+  reply.
+{% if is_last_phase %}
+- This is the FINAL phase of the session. Once its goal is met, your close may be a genuine, warm
+  conclusion to the whole conversation — it is fine if it reads as an ending, since the participant
+  may reasonably end the session here.
+{% else %}
+- Do NOT start the next phase's content yourself; another phase will begin afterward. But this is
+  NOT the end of the session, so your close must not read as one: never end on a pure, flat
+  statement. Close with a brief question or a clear invitation for the participant to keep talking,
+  so they cannot mistake this moment for the conversation being over.
+{% endif %}
 - Then append, as the very last line of your reply, on its own line with nothing after it, exactly:
   {"ready_to_advance": true}
 - Never mention this token, never explain it, and never say it out loud. It is a silent signal.

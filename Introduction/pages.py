@@ -5,6 +5,7 @@ import logging
 import os
 import random
 import threading
+import time
 from datetime import datetime, timezone
 from otree.api import Currency as c, currency_range
 
@@ -234,11 +235,17 @@ class Processing(Page):
         cachedMessages.append({'role': 'assistant', 'content': question_1, 'audioPath': audioPath})
         return messages, cachedMessages, profile
 
+    # T1 withholds the profile from the agent, so its own processing naturally finishes
+    # much faster than T2/T3 -- an attentive participant could infer their condition
+    # from wait time alone. Pad T1 up to T2/T3's typical range so it doesn't leak.
+    _T1_TARGET_SECONDS = 22.0
+
     @staticmethod
     async def live_method(player: Player, data):
         msg_type = data.get("type")
         if msg_type == "status" and player.profile_questionnaire == '':
             yield {player.id_in_group: 'running' }
+            started = time.monotonic()
             (messages, cachedMessages, profile), _ = await asyncio.gather(
                 Processing._run_questionnaire_profiling(player),
                 Processing._ensure_voice_models_warm(),
@@ -247,6 +254,12 @@ class Processing(Page):
             player.profilingMessages_questionnaire = json.dumps(messages)
             player.cachedMessages_questionnaire = json.dumps(cachedMessages)
             player.profile_questionnaire = profile.model_dump_json()
+
+            if os.environ.get('VOICE_CONDITION', 'T2') == 'T1':
+                remaining = Processing._T1_TARGET_SECONDS - (time.monotonic() - started)
+                if remaining > 0:
+                    await asyncio.sleep(remaining)
+
             yield {player.id_in_group: 'done' }
             return
 
