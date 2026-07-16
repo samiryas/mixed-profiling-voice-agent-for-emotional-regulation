@@ -42,6 +42,23 @@ def test_relative_jump_flagged():
     assert bool(df["artifact"].iloc[5])
 
 
+def test_slow_hr_drift_not_flagged():
+    # HR drifting smoothly from ~750ms to ~1050ms over a long recording: no single beat
+    # deviates much from its local neighbours, so nothing should be flagged. (A last-accepted
+    # anchor would go stale and cascade into rejecting the whole tail — the bug this guards.)
+    rr = list(np.linspace(750.0, 1050.0, 400))
+    df = clean_rr(make_df(rr))
+    assert df["artifact"].sum() == 0
+
+
+def test_isolated_spike_amid_drift_flagged_but_neighbours_kept():
+    rr = list(np.linspace(760.0, 1040.0, 200))
+    rr[100] = 1500.0  # one spurious beat in the middle of the drift
+    df = clean_rr(make_df(rr))
+    assert bool(df["artifact"].iloc[100])
+    assert df["artifact"].sum() == 1  # only the spike, not the drifting neighbours
+
+
 def test_no_diff_across_ble_gap():
     rr = [800.0, 810.0, 790.0, 810.0]
     gaps = [0.0, 800.0, GAP_THRESHOLD_MS + 1000.0, 800.0]  # dropout before beat 2

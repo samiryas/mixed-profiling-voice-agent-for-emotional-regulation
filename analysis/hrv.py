@@ -6,8 +6,13 @@ data instead of silently shifting it. This module builds on that:
 
 Cleaning (per beat):
 - absolute physiological bounds: RR outside [RR_MIN_MS, RR_MAX_MS] is an artifact;
-- relative jump: RR differing from the previous accepted beat by more than
-  MAX_REL_DIFF (default 25%, the common Kubios-style quotient rule) is an artifact.
+- relative jump: RR differing from the local median of its neighbours (a centred
+  window of +/-LOCAL_MEDIAN_HALFWIN clean beats) by more than MAX_REL_DIFF
+  (default 25%, the common Kubios/Malik-style quotient rule) is an artifact. The
+  reference is a *local median*, not the last accepted beat: a fixed last-accepted
+  anchor goes stale as HR drifts over a long recording, which cascades into
+  rejecting nearly every subsequent beat (observed: a 48-min recording flagged 94%
+  where the true artifact rate was ~4%).
 
 Pairing (for RMSSD):
 - successive differences are only taken between two consecutive *clean* beats, and
@@ -28,23 +33,35 @@ RR_MIN_MS = 300.0
 RR_MAX_MS = 2000.0
 MAX_REL_DIFF = 0.25
 GAP_THRESHOLD_MS = 3000.0
+# half-width (in beats) of the centred window used for the local-median reference
+LOCAL_MEDIAN_HALFWIN = 5
 
 
 def clean_rr(df: pd.DataFrame) -> pd.DataFrame:
-    """Return a copy with boolean 'artifact' and 'after_gap' columns added."""
+    """Return a copy with boolean 'artifact' and 'after_gap' columns added.
+
+    A beat is an artifact if it is outside the absolute physiological bounds, or if it
+    deviates from the local median of its in-bounds neighbours by more than MAX_REL_DIFF.
+    The local median is drift-tolerant (unlike a last-accepted anchor, which cascades) and
+    robust to isolated spikes (the spike itself barely moves the median of its neighbours).
+    """
     out = df.copy()
     rr = out["rr_ms"].to_numpy(dtype=float)
-    artifact = np.zeros(len(out), dtype=bool)
+    n = len(rr)
 
-    prev_ok: float | None = None
-    for i, v in enumerate(rr):
-        if not (RR_MIN_MS <= v <= RR_MAX_MS):
-            artifact[i] = True
+    in_bounds = (rr >= RR_MIN_MS) & (rr <= RR_MAX_MS)
+    artifact = ~in_bounds.copy()
+
+    half = LOCAL_MEDIAN_HALFWIN
+    for i in range(n):
+        if not in_bounds[i]:
             continue
-        if prev_ok is not None and abs(v - prev_ok) / prev_ok > MAX_REL_DIFF:
+        lo, hi = max(0, i - half), min(n, i + half + 1)
+        neigh = rr[lo:hi][in_bounds[lo:hi]]
+        neigh = neigh[np.arange(lo, hi)[in_bounds[lo:hi]] != i]  # exclude the beat itself
+        ref = float(np.median(neigh)) if neigh.size else rr[i]
+        if ref > 0 and abs(rr[i] - ref) / ref > MAX_REL_DIFF:
             artifact[i] = True
-            continue
-        prev_ok = v
 
     out["artifact"] = artifact
     out["after_gap"] = out["gap_ms"].to_numpy(dtype=float) > GAP_THRESHOLD_MS
