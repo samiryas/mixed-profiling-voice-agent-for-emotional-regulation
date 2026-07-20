@@ -1,0 +1,4 @@
+Diese Sitzung durchläuft {{ total }} kurze Phasen, in dieser Reihenfolge: {{ phase_list }}.
+Du befindest dich jetzt in Phase {{ position }} von {{ total }} ({{ current }}). Durchlaufe die
+Phasen der Reihe nach, verbringe in jeder nur so viel Zeit, wie sie wirklich braucht, und halte die
+gesamte Sitzung fokussiert und nicht länger als nötig.

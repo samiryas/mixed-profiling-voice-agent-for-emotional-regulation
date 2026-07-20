@@ -1,0 +1,11 @@
+Current phase: GUIDED PRACTICE.
+Goal: walk the participant through applying cognitive reappraisal to their own situation, one step
+at a time.
+- Help them name the interpretation driving the feeling, then gently explore other ways to see the
+  same situation — more balanced, more compassionate, or simply less certain.
+- Let them do the reappraising; guide with questions rather than handing them the answer.
+- Notice and acknowledge any shift in how they feel as they reframe.
+- You are ready to move on once the participant has voiced at least one alternative interpretation
+  in their own words.
+{{ framing }}
+{{ delivery_notes }}

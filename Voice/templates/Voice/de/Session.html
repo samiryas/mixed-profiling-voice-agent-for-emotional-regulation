@@ -1,0 +1,255 @@
+{{ extends "Voice/Page.html" }}
+
+{{ block title }}{{ endblock }}
+
+{{ block scripts }}
+<script>
+
+    const STATIC_BASE = window.location.origin + '/static/Voice/recordings/';
+
+    function getAudioUrl(audioPath) {
+        if (audioPath.startsWith('http')) return audioPath;
+        return STATIC_BASE + audioPath;
+    }
+
+    let sessionEnded = false;
+    function finishSession() {
+        if (sessionEnded) return;
+        sessionEnded = true;
+        cancelIdleNudge();
+        const form = document.querySelector('form');
+        if (form) form.submit();
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.querySelector('form');
+        if (form) form.addEventListener('submit', e => e.preventDefault());
+
+        window.addEventListener('keydown', function (e) {
+            if (e.code === 'Space' || e.keyCode === 32) { e.preventDefault(); return false; }
+        });
+
+        if (!js_vars.showTextTranscript) {
+            document.getElementById('chatPanel').style.display = 'none';
+        }
+
+        liveSend({});
+    });
+
+    const spacebarKey = 32;
+    let isRecording = false;
+    let audioRecorder;
+    let audioChunks = [];
+    let awaitingVas = false;   // Aufnahme blockieren, solange das VAS-Stressitem offen ist
+    // Engagement (#12): Zeitstempel für die Antwortlatenz = Lücke zwischen dem Ende der
+    // Agenten-Audio und dem Start der Aufnahme durch die Person.
+    let agentAudioEndedAt = null;
+    let recordingStartedAt = null;
+
+    // Sackgassen-Schutz: Phasen-Obergrenzen werden nur bei Bot-Zügen ausgewertet, und Bot-Züge
+    // entstehen nur nach Sprache der teilnehmenden Person — wer verstummt (z. B. weil der Agent
+    // sich verabschiedet anhört), würde die Sitzung für immer anhalten. Startet innerhalb von
+    // IDLE_NUDGE_MS nach einem Bot-Zug keine Aufnahme, wird trotzdem ein Bot-Zug angefordert,
+    // damit die Zug-/Zeit-Obergrenzen greifen und die Sitzung immer endet.
+    const IDLE_NUDGE_MS = 45000;
+    let idleNudgeTimer = null;
+
+    function cancelIdleNudge() {
+        if (idleNudgeTimer !== null) { clearTimeout(idleNudgeTimer); idleNudgeTimer = null; }
+    }
+
+    function armIdleNudge() {
+        cancelIdleNudge();
+        if (sessionEnded) return;
+        idleNudgeTimer = setTimeout(() => {
+            idleNudgeTimer = null;
+            if (sessionEnded || isRecording || awaitingVas) return;
+            liveSend({ 'event': 'botMsg' });
+        }, IDLE_NUDGE_MS);
+    }
+
+    function toggleRecording(event) {
+        if (sessionEnded || awaitingVas) return;
+        if (event.keyCode === spacebarKey && !event.repeat) {
+            event.preventDefault();
+            event.stopPropagation();
+            if (!isRecording) {
+                isRecording = true;
+                cancelIdleNudge();   // die Person antwortet; kein Anstoß nötig
+                recordingStartedAt = Date.now();
+                audioChunks = [];
+                audioRecorder.start();
+                document.getElementById('micIcon').style.color = '#38A1F3';
+            } else {
+                isRecording = false;
+                audioRecorder.stop();
+                document.getElementById('micIcon').style.color = '#abaaaa';
+            }
+        }
+    }
+
+    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+        .then(stream => {
+            audioRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=opus' });
+            audioRecorder.addEventListener('dataavailable', e => audioChunks.push(e.data));
+            audioRecorder.addEventListener('stop', () => {
+                const blob = new Blob(audioChunks, { type: 'video/webm' });
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    const base64 = reader.result.split(',')[1];
+                    // Antwortlatenz: Ende der Agenten-Audio -> Start der Aufnahme (#12)
+                    let latencyMs = null;
+                    if (agentAudioEndedAt !== null && recordingStartedAt !== null) {
+                        latencyMs = recordingStartedAt - agentAudioEndedAt;
+                    }
+                    agentAudioEndedAt = null;   // pro Zug einmal gemessen
+                    liveSend({ 'event': 'text', 'text': base64, 'latencyMs': latencyMs });
+                };
+                reader.readAsDataURL(blob);
+            });
+            document.addEventListener('keydown', toggleRecording);
+        })
+        .catch(err => console.error('getUserMedia error:', err));
+
+    function liveRecv(data) {
+        const event = data['event'];
+        const chatMessages = document.getElementById('chatMessages');
+
+        if (data.error) {
+            chatMessages.insertAdjacentHTML('beforeend', `
+                <div class="message sysMsg"><strong>System<br></strong> ${data.error}</div>`);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return;
+        }
+
+        if (event === 'text') {
+            chatMessages.insertAdjacentHTML('beforeend', `
+                <div class="message selfMsg" id="${data.msgId}" data-author="${data.sender}">
+                    <strong>Du<br></strong> ${data.selfText}
+                </div>`);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            // Erste Antwort beantwortet den Prime -> VAS-Stresswert erheben, bevor der Bot
+            // antwortet; sonst normal fortfahren.
+            if (data.showVas) {
+                showVasUI();
+            } else {
+                liveSend({ 'event': 'botMsg' });
+            }
+
+        } else if (event === 'vasStored') {
+            liveSend({ 'event': 'botMsg' });
+
+        } else if (event === 'resumeVas') {
+            // Ein Reload hat das VAS vor dem Absenden unterbrochen -> erneut anzeigen
+            if (!awaitingVas && !document.getElementById('vasBox')) showVasUI();
+
+        } else if (event === 'botText') {
+            cancelIdleNudge();   // ein Bot-Zug kommt an; nach dessen Ende neu gestartet
+            const typingId = 'typing-' + Date.now();
+            chatMessages.insertAdjacentHTML('beforeend', `
+                <div class="message botMsg typing" id="${typingId}">
+                    <div class="typing-indicator"><span></span><span></span><span></span></div>
+                </div>`);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+
+            setTimeout(() => {
+                const t = document.getElementById(typingId);
+                if (t) t.remove();
+
+                chatMessages.insertAdjacentHTML('beforeend', `
+                    <div class="message botMsg" id="${data.botMsgId}" data-author="${data.sender}">
+                        <strong>Bot<br></strong> ${data.text}
+                    </div>`);
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+
+                if (data.audioFilePath) {
+                    const soundIcon = document.getElementById('soundIcon');
+                    const audio = new Audio(getAudioUrl(data.audioFilePath));
+                    audio.addEventListener('play', () => { soundIcon.style.color = '#38A1F3'; });
+                    audio.addEventListener('ended', () => {
+                        soundIcon.style.color = '#abaaaa';
+                        agentAudioEndedAt = Date.now();   // Latenz-Uhr startet (#12)
+                        if (data.sessionDone) finishSession(); else armIdleNudge();
+                    });
+                    audio.play().catch(e => {
+                        console.error('Play error:', e);
+                        agentAudioEndedAt = Date.now();   // keine Wiedergabe -> ab Anzeige
+                        if (data.sessionDone) finishSession(); else armIdleNudge();
+                    });
+                } else {
+                    agentAudioEndedAt = Date.now();       // reine Textantwort -> ab Anzeige
+                    if (data.sessionDone) setTimeout(finishSession, 1500); else armIdleNudge();
+                }
+            }, 1200);
+        }
+    }
+
+    // VAS-Stress-Manipulationscheck (#5): erscheint einmal, direkt nach der ersten Antwort der
+    // Person. Blockiert die Aufnahme und hält die Bot-Antwort zurück, bis abgesendet wurde.
+    function showVasUI() {
+        awaitingVas = true;
+        const chatMessages = document.getElementById('chatMessages');
+        const wrap = document.createElement('div');
+        wrap.className = 'message sysMsg';
+        wrap.id = 'vasBox';
+        wrap.innerHTML = `
+            <strong>Kurze Zwischenfrage</strong><br>
+            Wie gestresst fühlst du dich gerade?
+            <div style="display:flex; justify-content:space-between; font-size:12px; margin-top:10px;">
+                <span>Überhaupt nicht gestresst</span><span>Äußerst gestresst</span>
+            </div>
+            <input type="range" id="vasSlider" min="0" max="10" step="1" value="5" style="width:100%;">
+            <div style="text-align:center; margin:6px 0;">Ausgewählt: <span id="vasVal">5</span> / 10</div>
+            <button type="button" class="btn btn-primary btn-sm" id="vasSubmit">Absenden</button>`;
+        chatMessages.appendChild(wrap);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        const slider = document.getElementById('vasSlider');
+        const valOut = document.getElementById('vasVal');
+        slider.addEventListener('input', () => { valOut.textContent = slider.value; });
+        document.getElementById('vasSubmit').addEventListener('click', () => {
+            const v = parseInt(slider.value, 10);
+            liveSend({ 'event': 'vas', 'value': v, 'ts': Date.now() / 1000 });
+            wrap.remove();
+            awaitingVas = false;
+        });
+    }
+</script>
+{{ endblock }}
+
+
+{{ block content }}
+<div class='container card mb-3'>
+    <div class='row no-gutters'>
+
+        <div class='infoBox col-md-4 d-flex align-items-center justify-content-center' style='font-size:22px;'>
+            <b>Aufforderung:</b> <i>Sprich darüber, was dir gerade durch den Kopf geht.</i>
+            <div style="display: flex; gap: 30px; align-items: center; margin-top: 15px;">
+                <svg id="micIcon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+                <svg id="soundIcon" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            </div>
+            <br>
+            Drücke die Leertaste, um die Aufnahme zu starten. Erneut drücken, um zu stoppen und zu senden.
+            <br>
+            <button type="button" class="btn btn-outline-secondary btn-sm mt-3"
+                    onclick="finishSession()">Sitzung beenden</button>
+        </div>
+
+        <div class='chatPanel col-md-8' id='chatPanel'>
+            <div class='chatHeader'>Sprachsitzung</div>
+            <div id='chatMessages' class='chatMessages'>
+                {{ if cached_messages and show_history }}
+                    {{ for msg in cached_messages }}
+                        {{ if msg.sender == 'assistant' }}
+                            <div class="message botMsg"><strong>Bot<br></strong> {{ msg.text }}</div>
+                        {{ endif }}
+                        {{ if msg.sender == 'user' }}
+                            <div class="message selfMsg"><strong>Du<br></strong> {{ msg.text }}</div>
+                        {{ endif }}
+                    {{ endfor }}
+                {{ endif }}
+            </div>
+        </div>
+    </div>
+</div>
+{{ endblock }}

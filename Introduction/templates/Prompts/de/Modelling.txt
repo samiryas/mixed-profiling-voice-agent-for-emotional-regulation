@@ -1,0 +1,5 @@
+Bitte übertragen Sie die vorherigen Antworten in das JSON-Antwortmodell und platzieren Sie die Absätze in den jeweiligen JSON-Feldern.
+Ändern Sie den Text nicht.
+
+Antwortmodell:
+{{ response_model }}

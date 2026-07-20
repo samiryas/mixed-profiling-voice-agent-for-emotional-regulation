@@ -8,13 +8,37 @@ from pydantic import BaseModel, ConfigDict, TypeAdapter, ValidationError
 
 BOT_TEMP = 1.0
 OPENAI_KEY = os.environ.get('OPENAI_KEY')
-OPENAI_MODEL = os.environ.get("OPENAI_MODEL")
+OPENAI_MODEL = (os.environ.get("OPENAI_MODEL") or "").strip()
 URL = os.environ.get("OPENAI_URL")
+
+
+def openai_strict_schema(schema: dict) -> dict:
+    """OpenAI strict json_schema mode requires additionalProperties: false on every object."""
+    schema = json.loads(json.dumps(schema))
+
+    def patch(node):
+        if not isinstance(node, dict):
+            return
+        if node.get("type") == "object" or "properties" in node:
+            node["additionalProperties"] = False
+            if "properties" in node:
+                node["required"] = list(node["properties"].keys())
+        for value in node.values():
+            if isinstance(value, dict):
+                patch(value)
+            elif isinstance(value, list):
+                for item in value:
+                    if isinstance(item, dict):
+                        patch(item)
+
+    patch(schema)
+    return schema
+
 
 # function to run messages (async)
 async def runGPT(inputMessage):
     # openai async client and response creation
-    client = AsyncOpenAI(api_key=OPENAI_KEY,base_url=URL, max_retries=50)
+    client = AsyncOpenAI(api_key=OPENAI_KEY,base_url=URL, max_retries=3)
     response = await client.chat.completions.create(
         model=OPENAI_MODEL,
         temperature=BOT_TEMP,
@@ -26,8 +50,8 @@ async def runGPT(inputMessage):
 
 
 async def runGPTModel(inputMessage,model:BaseModel):
-    client = AsyncOpenAI(api_key=OPENAI_KEY,base_url=URL, max_retries=5)
-    schema = model.model_json_schema()
+    client = AsyncOpenAI(api_key=OPENAI_KEY,base_url=URL, max_retries=3)
+    schema = openai_strict_schema(model.model_json_schema())
 
     parsed_correct=False
     while parsed_correct==False:

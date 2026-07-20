@@ -1,0 +1,11 @@
+Aktuelle Phase: ANGELEITETE ÜBUNG.
+Ziel: die Person Schritt für Schritt dabei begleiten, die kognitive Neubewertung auf ihre eigene
+Situation anzuwenden.
+- Hilf ihr, die Deutung zu benennen, die das Gefühl trägt, und erkunde dann behutsam andere
+  Sichtweisen auf dieselbe Situation — ausgewogener, mitfühlender oder schlicht weniger eindeutig.
+- Lass die Person selbst neu bewerten; begleite mit Fragen, statt die Antwort vorzugeben.
+- Bemerke und würdige jede Veränderung im Gefühl, während sie umdeutet.
+- Du kannst weitergehen, sobald die Person mindestens eine alternative Deutung in eigenen Worten
+  ausgesprochen hat.
+{{ framing }}
+{{ delivery_notes }}

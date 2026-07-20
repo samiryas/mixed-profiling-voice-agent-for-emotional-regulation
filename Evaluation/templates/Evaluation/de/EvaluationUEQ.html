@@ -1,0 +1,161 @@
+{% extends 'global/Page.html' %}
+
+{% block title %}
+    Abschlussfragebogen
+{% endblock %}
+
+{% block content %}
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Antwortverhalten des Sprachassistenten</h3>
+    <p>Das Antwortverhalten des Sprachassistenten empfinde ich als …</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 18%"></th>
+                <th style="width: 9%">1</th>
+                <th style="width: 9%">2</th>
+                <th style="width: 9%">3</th>
+                <th style="width: 9%">4</th>
+                <th style="width: 9%">5</th>
+                <th style="width: 9%">6</th>
+                <th style="width: 9%">7</th>
+                <th style="width: 18%"></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>künstlich</td>
+                {% for choice in form.ueq_behavior_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>natürlich</td>
+            </tr>
+            <tr>
+                <td>unangenehm</td>
+                {% for choice in form.ueq_behavior_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>angenehm</td>
+            </tr>
+            <tr>
+                <td>unsympathisch</td>
+                {% for choice in form.ueq_behavior_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>sympathisch</td>
+            </tr>
+            <tr>
+                <td>langweilig</td>
+                {% for choice in form.ueq_behavior_4 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>unterhaltsam</td>
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Antwortqualität des Sprachassistenten</h3>
+    <p>Die Antworten des Sprachassistenten waren …</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 18%"></th>
+                <th style="width: 9%">1</th>
+                <th style="width: 9%">2</th>
+                <th style="width: 9%">3</th>
+                <th style="width: 9%">4</th>
+                <th style="width: 9%">5</th>
+                <th style="width: 9%">6</th>
+                <th style="width: 9%">7</th>
+                <th style="width: 18%"></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>unpassend</td>
+                {% for choice in form.ueq_quality_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>passend</td>
+            </tr>
+            <tr>
+                <td>nutzlos</td>
+                {% for choice in form.ueq_quality_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>nützlich</td>
+            </tr>
+            <tr>
+                <td>nicht hilfreich</td>
+                {% for choice in form.ueq_quality_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>hilfreich</td>
+            </tr>
+            <tr>
+                <td>unintelligent</td>
+                {% for choice in form.ueq_quality_4 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>intelligent</td>
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Nützlichkeit</h3>
+    <p>Ich betrachte die Möglichkeit, das Produkt zu nutzen, als …</p>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 18%"></th>
+                <th style="width: 9%">1</th>
+                <th style="width: 9%">2</th>
+                <th style="width: 9%">3</th>
+                <th style="width: 9%">4</th>
+                <th style="width: 9%">5</th>
+                <th style="width: 9%">6</th>
+                <th style="width: 9%">7</th>
+                <th style="width: 18%"></th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>nutzlos</td>
+                {% for choice in form.ueq_useful_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>nützlich</td>
+            </tr>
+            <tr>
+                <td>nicht lohnend</td>
+                {% for choice in form.ueq_useful_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>lohnend</td>
+            </tr>
+            <tr>
+                <td>nicht hilfreich</td>
+                {% for choice in form.ueq_useful_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>hilfreich</td>
+            </tr>
+            <tr>
+                <td>nicht vorteilhaft</td>
+                {% for choice in form.ueq_useful_4 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+                <td>vorteilhaft</td>
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div style="text-align: right; margin-top: 20px;">
+        {{ next_button }}
+    </div>
+{% endblock %}

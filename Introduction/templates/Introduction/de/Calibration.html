@@ -1,0 +1,179 @@
+{% extends 'global/Page.html' %}
+
+{% block title %}
+    Sprachkalibrierung
+{% endblock %}
+
+{% block app_styles %}
+<style>
+    .calib-card { max-width: 820px; margin: 0 auto; }
+    .calib-passage {
+        background: #f5f7fa; border: 1px solid #d8dee6; border-radius: 8px;
+        padding: 18px 22px; font-size: 19px; line-height: 1.6; margin: 18px 0;
+    }
+    .calib-controls { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+    .calib-status { font-size: 16px; color: #444; min-height: 24px; }
+    .calib-progress-track {
+        width: 100%; height: 10px; background: #e4e8ee; border-radius: 6px;
+        overflow: hidden; margin-top: 14px;
+    }
+    .calib-progress-bar { width: 0%; height: 100%; background: #38A1F3; transition: width 0.2s linear; }
+    #micIcon { color: #abaaaa; transition: color 0.2s; }
+    #micIcon.recording { color: #e23b3b; }
+    .calib-hint { color: #777; font-size: 14px; margin-top: 6px; }
+    .calib-ok { color: #1a8a3a; font-weight: 600; }
+    .calib-err { color: #c0392b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container card calib-card mb-3 p-4">
+    <h3>Sprachkalibrierung</h3>
+    <p>
+        Vor den Fragebögen benötigen wir eine kurze Probe Ihrer normalen Sprechstimme. Diese wird
+        ausschließlich zur Kalibrierung der Sprachanalyse später in der Studie verwendet. Bitte lesen
+        Sie den folgenden Text in natürlichem, entspanntem Tempo laut vor. Die Aufnahme stoppt
+        automatisch nach 30 Sekunden.
+    </p>
+
+    <div class="calib-passage" id="calibPassage">
+        Einst stritten sich Nordwind und Sonne, wer von ihnen beiden wohl der Stärkere wäre, als ein
+        Wanderer, der in einen warmen Mantel gehüllt war, des Weges daherkam. Sie wurden einig, dass
+        derjenige für den Stärkeren gelten sollte, der den Wanderer zwingen würde, seinen Mantel
+        abzunehmen. Der Nordwind blies mit aller Macht, aber je mehr er blies, desto fester hüllte sich
+        der Wanderer in seinen Mantel ein. Endlich gab der Nordwind den Kampf auf. Nun erwärmte die
+        Sonne die Luft mit ihren freundlichen Strahlen, und schon nach wenigen Augenblicken zog der
+        Wanderer seinen Mantel aus.
+    </div>
+
+    <div class="calib-controls">
+        <svg id="micIcon" xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24"
+             fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="23"></line>
+            <line x1="8" y1="23" x2="16" y2="23"></line>
+        </svg>
+        <button type="button" class="btn btn-primary" id="startBtn" disabled>Aufnahme starten</button>
+        <button type="button" class="btn btn-outline-secondary" id="stopBtn" style="display:none;">Stopp</button>
+        <button type="button" class="btn btn-outline-secondary" id="redoBtn" style="display:none;">Erneut aufnehmen</button>
+    </div>
+
+    <div class="calib-progress-track"><div class="calib-progress-bar" id="progressBar"></div></div>
+    <div class="calib-status" id="status">Mikrofonzugriff wird angefordert…</div>
+    <div class="calib-hint">Bitte nehmen Sie mindestens 10 Sekunden auf, damit die Kalibrierung zuverlässig ist.</div>
+
+    <div id="nextWrap" style="display:none; text-align:right; margin-top:20px;">
+        {{ next_button }}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    const RECORD_SECONDS = 30;
+    const MIN_SECONDS = 10;
+
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let startedAt = 0;
+    let countdownTimer = null;
+
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const redoBtn = document.getElementById('redoBtn');
+    const micIcon = document.getElementById('micIcon');
+    const statusEl = document.getElementById('status');
+    const progressBar = document.getElementById('progressBar');
+    const nextWrap = document.getElementById('nextWrap');
+
+    document.addEventListener('DOMContentLoaded', function () {
+        liveSend({ 'timestamp_calibration': Date.now() / 1000 });
+
+        // never submit via Enter before a recording exists
+        const form = document.querySelector('form');
+        if (form) form.addEventListener('submit', function (e) {
+            if (nextWrap.style.display === 'none') e.preventDefault();
+        });
+
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm; codecs=opus' });
+                mediaRecorder.addEventListener('dataavailable', e => audioChunks.push(e.data));
+                mediaRecorder.addEventListener('stop', onRecordingStopped);
+                startBtn.disabled = false;
+                statusEl.textContent = 'Bereit. Klicken Sie auf „Aufnahme starten“ und lesen Sie den Text laut vor.';
+            })
+            .catch(err => {
+                console.error('getUserMedia error:', err);
+                statusEl.innerHTML = '<span class="calib-err">Mikrofonzugriff ist erforderlich, um fortzufahren. '
+                    + 'Bitte erlauben Sie den Zugriff und laden Sie die Seite neu.</span>';
+            });
+    });
+
+    function startRecording() {
+        audioChunks = [];
+        startedAt = Date.now();
+        mediaRecorder.start();
+        micIcon.classList.add('recording');
+        startBtn.style.display = 'none';
+        redoBtn.style.display = 'none';
+        stopBtn.style.display = 'inline-block';
+        nextWrap.style.display = 'none';
+        statusEl.textContent = 'Aufnahme läuft … bitte lesen Sie den Text laut vor.';
+        tick();
+    }
+
+    function tick() {
+        countdownTimer = setInterval(() => {
+            const elapsed = (Date.now() - startedAt) / 1000;
+            const pct = Math.min(100, (elapsed / RECORD_SECONDS) * 100);
+            progressBar.style.width = pct + '%';
+            const remaining = Math.max(0, Math.ceil(RECORD_SECONDS - elapsed));
+            statusEl.textContent = 'Aufnahme läuft … noch ' + remaining + ' s.';
+            if (elapsed >= RECORD_SECONDS) stopRecording();
+        }, 200);
+    }
+
+    function stopRecording() {
+        if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+        if (mediaRecorder && mediaRecorder.state === 'recording') mediaRecorder.stop();
+        micIcon.classList.remove('recording');
+        stopBtn.style.display = 'none';
+    }
+
+    function onRecordingStopped() {
+        const elapsed = (Date.now() - startedAt) / 1000;
+        if (elapsed < MIN_SECONDS) {
+            progressBar.style.width = '0%';
+            statusEl.innerHTML = '<span class="calib-err">Das war etwas zu kurz ('
+                + Math.floor(elapsed) + ' s). Bitte nehmen Sie mindestens ' + MIN_SECONDS + ' Sekunden auf.</span>';
+            redoBtn.style.display = 'inline-block';
+            startBtn.style.display = 'none';
+            return;
+        }
+        const blob = new Blob(audioChunks, { type: 'video/webm' });
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const base64 = reader.result.split(',')[1];
+            statusEl.textContent = 'Kalibrierung wird gespeichert …';
+            liveSend({ 'event': 'calibration', 'audio': base64 });
+        };
+        reader.readAsDataURL(blob);
+    }
+
+    startBtn.addEventListener('click', startRecording);
+    stopBtn.addEventListener('click', stopRecording);
+    redoBtn.addEventListener('click', startRecording);
+
+    function liveRecv(data) {
+        if (data && data.event === 'saved') {
+            progressBar.style.width = '100%';
+            statusEl.innerHTML = '<span class="calib-ok">Kalibrierung gespeichert. Sie können fortfahren.</span>';
+            nextWrap.style.display = 'block';
+            redoBtn.style.display = 'inline-block';
+            startBtn.style.display = 'none';
+        }
+    }
+</script>
+{% endblock %}

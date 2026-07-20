@@ -1,0 +1,48 @@
+{% extends 'global/Page.html' %}
+
+{% block title %}
+Persönlichkeit
+{% endblock %}
+
+{% block content %}
+    <div class="explanation-container">
+        Inwieweit treffen die folgenden Aussagen auf Sie zu?
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Aussagen</th>
+                <th style="width: 8%">trifft überhaupt nicht zu</th>
+                <th style="width: 8%">trifft eher nicht zu</th>
+                <th style="width: 8%">weder noch</th>
+                <th style="width: 8%">trifft eher zu</th>
+                <th style="width: 8%">trifft voll und ganz zu</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ for field in form }}
+                <tr>
+                    <td>{{ field.label }}</td>
+                    {% for choice in field %}
+                        <td align="center" >{{ choice }}</td>
+                    {% endfor %}
+                </tr>
+            {{ endfor }}
+        </tbody>
+    </table>
+    
+    <div style="text-align: right; margin-top: 20px;">
+        {{ next_button }}
+    </div>
+{% endblock %}
+
+{{ block scripts }}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const timestamp = Date.now() / 1000;
+        console.log(timestamp)
+        liveSend({'timestamp_bigfive': timestamp})
+    });
+</script>
+{{ endblock }}

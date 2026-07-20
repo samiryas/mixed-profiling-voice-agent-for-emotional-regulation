@@ -29,6 +29,12 @@ class Player(BasePlayer):
     profile_interview = models.LongStringField(initial='')
     profilingMessages_interview = models.LongStringField(initial='[]')
 
+    # server-side UTC epochs marking the interview's actual start/end, so the
+    # analysis pipeline can segment it exactly instead of approximating it from
+    # neighboring apps' timestamps (see docs/analysis_pipeline.md).
+    timestamp_interview_start = models.FloatField(initial=0)
+    timestamp_interview_end = models.FloatField(initial=0)
+
 class MessageData(ExtraModel):
     player = models.Link(Player)
     # msg info
@@ -37,11 +43,12 @@ class MessageData(ExtraModel):
     sender = models.StringField()
     fullText = models.StringField()
     msgText = models.StringField()
+    audioPath = models.StringField(initial='')
 
 # custom export of chatLog
 def custom_export(players):
     # header row
-    yield [ 'sessionId',  'subjectId', 'msgId', 'timestamp', 'sender', 'fullText', 'msgText']
+    yield [ 'sessionId',  'subjectId', 'msgId', 'timestamp', 'sender', 'fullText', 'msgText', 'audioPath']
     mData = MessageData.filter()
     for m in mData:
         player = m.player
@@ -53,4 +60,4 @@ def custom_export(players):
             fullText = m.fullText
 
         # write to csv
-        yield [ session.code, participant.code, m.msgId, m.timestamp, m.sender, fullText, m.msgText]
+        yield [ session.code, participant.code, m.msgId, m.timestamp, m.sender, fullText, m.msgText, m.audioPath]

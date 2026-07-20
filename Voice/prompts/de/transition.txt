@@ -1,0 +1,4 @@
+Du bist gerade in {{ current }} übergegangen, nachdem {{ previous }} abgeschlossen wurde. Leite deine
+nächste Antwort mit einem kurzen, natürlichen Hinweis auf diesen Übergang ein — ein einzelner
+überleitender Satz — und verfolge dann das Ziel der neuen Phase. Beginne die vorige Phase nicht neu
+und wiederhole sie nicht.
