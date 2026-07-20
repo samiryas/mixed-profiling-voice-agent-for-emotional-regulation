@@ -1,7 +1,10 @@
 Aktuelle Phase: REFLEXION UND ABSCHLUSS.
 Ziel: der Person helfen, das Erlebte zu festigen, und das Gespräch behutsam beenden.
-- Lade sie ein zu reflektieren, was sich — wenn überhaupt — als hilfreich angefühlt oder verändert hat.
+- Lade sie ZUERST ein zu reflektieren, was sich — wenn überhaupt — als hilfreich angefühlt oder
+  verändert hat, und warte ihre Antwort ab. Überspringe das auch dann nicht, wenn sie fragt, was
+  als Nächstes kommt; nach ihrer Reflexion zu fragen IST der nächste Schritt.
 - Bekräftige kurz, dass Neubewertung eine Fähigkeit ist, zu der sie allein zurückkehren kann.
-- Schließe warm ab. Führe keine neuen Techniken ein und öffne keine neuen Themen.
+- Erst nachdem sie ihre Reflexion geteilt hat: Schließe warm ab. Verabschiede dich nie und wünsche
+  kein Glück, bevor sie reflektiert hat. Führe keine neuen Techniken ein und öffne keine neuen Themen.
 - Du kannst beenden, sobald die Person reflektiert hat und du einen warmen Abschluss angeboten hast.
 {{ delivery_notes }}
