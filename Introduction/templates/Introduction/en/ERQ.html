@@ -1,0 +1,61 @@
+{% extends 'global/Page.html' %}
+
+{% block title %}
+    Emotion Regulation
+{% endblock %}
+
+{% block content %}
+    <div class="explanation-container">
+        Please read each statement and indicate how much you agree or disagree with it.
+        There are no right or wrong answers. Do not spend too much time on any statement.
+        <ul>
+            <li>1 = Strongly disagree</li>
+            <li>2 = Disagree</li>
+            <li>3 = Slightly disagree</li>
+            <li>4 = Neutral</li>
+            <li>5 = Slightly agree</li>
+            <li>6 = Agree</li>
+            <li>7 = Strongly agree</li>
+        </ul>
+    </div>
+
+    
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 35%">Statements</th>
+                <th style="width: 9%">Strongly disagree</th>
+                <th style="width: 9%">Disagree</th>
+                <th style="width: 9%">Slightly disagree</th>
+                <th style="width: 9%">Neutral</th>
+                <th style="width: 9%">Slightly agree</th>
+                <th style="width: 9%">Agree</th>
+                <th style="width: 9%">Strongly agree</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{ for field in form }}
+                <tr>
+                    <td>{{ field.label }}</td>
+                    {% for choice in field %}
+                        <td align="center" >{{ choice }}</td>
+                    {% endfor %}
+                </tr>
+            {{ endfor }}
+        </tbody>
+    </table>
+    
+    <div style="text-align: right; margin-top: 20px;">
+        {{ next_button }}
+    </div>
+{% endblock %}
+
+{{ block scripts }}
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const timestamp = Date.now() / 1000; // Sekunden mit Millisekunden-Präzision
+        console.log(timestamp)
+        liveSend({'timestamp_erq': timestamp})
+    });
+</script>
+{{ endblock }}

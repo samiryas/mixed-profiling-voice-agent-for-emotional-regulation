@@ -1,0 +1,99 @@
+{% extends 'global/Page.html' %}
+
+{% block title %}
+    Abschlussfragebogen
+{% endblock %}
+
+{% block content %}
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Personalisierung</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Aussagen</th>
+                <th style="width: 7.85%">1<br>Trifft gar nicht zu</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Trifft völlig zu</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Ich hatte das Gefühl, dass die Anleitung des KI-Coaches speziell auf mich und meine Situation zugeschnitten war.</td>
+                {% for choice in form.pers_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Der KI-Coach schien meine persönlichen Eigenschaften zu kennen und zu berücksichtigen.</td>
+                {% for choice in form.pers_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Die Sitzung fühlte sich eher allgemein als persönlich an.</td>
+                {% for choice in form.pers_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Wahrgenommene KI-Halluzinationen</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 45%">Aussagen</th>
+                <th style="width: 7.85%">1<br>Stimme gar nicht zu</th>
+                <th style="width: 7.85%">2</th>
+                <th style="width: 7.85%">3</th>
+                <th style="width: 7.85%">4</th>
+                <th style="width: 7.85%">5</th>
+                <th style="width: 7.85%">6</th>
+                <th style="width: 7.85%">7<br>Stimme voll zu</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Der KI-Coach bezog sich auf persönliche Details, die ich während der Sitzung nicht geteilt hatte.</td>
+                {% for choice in form.hall_1 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Der KI-Coach stellte Vermutungen über mich dar, als wären es Fakten.</td>
+                {% for choice in form.hall_2 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Der KI-Coach brachte Informationen über meine Situation ein, die nicht von mir stammten.</td>
+                {% for choice in form.hall_3 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+            <tr>
+                <td>Der KI-Coach schien sich an Details zu erinnern oder zu verwenden, die eigentlich nicht Teil unseres Gesprächs waren.</td>
+                {% for choice in form.hall_4 %}
+                    <td align="center">{{ choice }}</td>
+                {% endfor %}
+            </tr>
+        </tbody>
+    </table>
+    </div>
+
+    <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
+    <h3>Offenes Feedback</h3>
+    <p>{{ form.open_feedback_1.label }}</p>
+    {{ form.open_feedback_1 }}
+    </div>
+
+    <div style="text-align: right; margin-top: 20px;">
+        {{ next_button }}
+    </div>
+{% endblock %}

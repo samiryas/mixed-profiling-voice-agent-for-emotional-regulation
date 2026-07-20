@@ -1,4 +1,6 @@
-FROM python:3.13
+# 3.12 (not 3.13): requirements pins bleak==0.22.0 (Polar H10 BLE, HRV pipeline),
+# which requires Python <3.13. All other pinned deps ship 3.12 wheels.
+FROM python:3.11
 
 WORKDIR /app
 
