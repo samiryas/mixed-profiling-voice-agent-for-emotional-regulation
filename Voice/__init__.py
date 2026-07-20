@@ -21,13 +21,13 @@ from .prompts import (
 from settings import LANG, HRV_REST_SECONDS, hrv_rest_duration_label
 
 doc = """
-Module 2 — Voice Session (scaffold).
+Module 2 — Voice Session.
 
 Personalized emotion-regulation voice agent built on the
 clintmckenna/oTree_gpt `chat_voice` foundation. The full turn loop
 (record -> STT -> LLM -> TTS -> playback) is wired here; the actual
-STT / LLM / TTS calls go through swappable adapters in services.py.
-The scaffold ships local stubs so the loop runs end-to-end without any
+STT / LLM / TTS calls go through swappable adapters in services.py,
+which also ship local stubs so the loop runs end-to-end without any
 API keys or models installed.
 """
 

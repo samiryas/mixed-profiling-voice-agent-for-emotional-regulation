@@ -55,4 +55,6 @@ ADMIN_PASSWORD = environ.get('OTREE_ADMIN_PASSWORD')
 
 DEMO_PAGE_INTRO_HTML = """ """
 
-SECRET_KEY = '5002814748463'
+# for security, set OTREE_SECRET_KEY in the environment (see .env.example);
+# the fallback is for local development only.
+SECRET_KEY = environ.get('OTREE_SECRET_KEY', '5002814748463')

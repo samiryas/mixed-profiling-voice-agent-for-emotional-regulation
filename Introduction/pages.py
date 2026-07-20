@@ -53,7 +53,6 @@ class BigFiveT2(BigFive):
 
     def is_displayed(self):
         if self.player.field_maybe_none('treatment_questionnaire') is None:
-            number = random.choice([1, 2])
             self.player.treatment_questionnaire = random.choice([1, 2])
         return self.player.treatment_questionnaire == 2
     
@@ -78,8 +77,15 @@ class Privacy(Page):
     form_fields = ['privacy_agreement']
     template_name = f'Introduction/{LANG}/Privacy.html'
 
-    #def before_next_page(self):
-    #    self.player.
+    def error_message(self, values):
+        # an unchecked CheckboxInput submits False, which oTree accepts as a
+        # valid BooleanField value — so consent must be enforced explicitly.
+        if not values['privacy_agreement']:
+            return (
+                'Bitte akzeptieren Sie die Datenschutzerklärung, um an der Studie teilzunehmen.'
+                if LANG == 'de'
+                else 'Please accept the privacy policy to take part in the study.'
+            )
 
     @staticmethod
     def live_method(player, data):

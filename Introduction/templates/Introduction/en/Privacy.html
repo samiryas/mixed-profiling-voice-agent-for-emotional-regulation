@@ -8,8 +8,6 @@ at the Institute of Information Systems (WIN) of Karlsruhe Institute of Technolo
 {% block content %}
 
     <div class="container card ms-0 mr-0 mb-4 p-3" style="max-width: 100%;">
-<p><b></b></p>
-
 <p><b>Controller</b><br />
     According to the General Data Protection Regulation (GDPR) (Art. 4, No. 7) and other data protection regulations, the Controller is:<br />
     Karlsruhe Institute of Technology (KIT)<br />
@@ -65,7 +63,7 @@ According to archiving regulations, documents must be offered to the KIT Archive
     <li>All research data will be kept for a period of ten years upon completion of the project according to the Statutes for Safeguarding Good Research Practice at Karlsruhe Institute of Technology (KIT).</li>
     <li>This does not apply to first and last names and addresses which have to be stored together with the budgeting documents for six years due to budgetary reasons.</li>
 </ul>
-If applicable, the documents may be taken over by the KIT Archives where they will be kept permanently according to Art. 4, par. 1, e GDPR in conjuction with Art. 8, par. 2 of the Baden-Württember Archiving Act (LArchG) in conjunction with Articles 3 and 2 LArchG.
+If applicable, the documents may be taken over by the KIT Archives where they will be kept permanently according to Art. 4, par. 1, e GDPR in conjunction with Art. 8, par. 2 of the Baden-Württemberg Archiving Act (LArchG) in conjunction with Articles 3 and 2 LArchG.
 </p>
 
 <p><b>Your Rights</b><br />
@@ -94,8 +92,7 @@ Der Landesbeauftragte für den Datenschutz und die Informationsfreiheit Baden-W�
 {{ block scripts }}
 <script>
     document.addEventListener("DOMContentLoaded", function() {
-        const timestamp = Date.now() / 1000; // Sekunden mit Millisekunden-Präzision
-        console.log(timestamp)
+        const timestamp = Date.now() / 1000;
         liveSend({'timestamp_privacy': timestamp})
     });
 </script>
